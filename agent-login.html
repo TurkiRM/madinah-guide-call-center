@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Madinah Guide — Agent Login</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem}
+    .wrap{width:100%;max-width:380px;display:flex;flex-direction:column;gap:0.85rem}
+
+    /* Header */
+    .header{background:#085041;border-radius:16px;padding:1.5rem;text-align:center}
+    .h-icon{font-size:40px;margin-bottom:0.5rem}
+    .h-en{font-size:18px;font-weight:600;color:#fff;margin-bottom:3px}
+    .h-ar{font-size:13px;color:#9FE1CB;margin-bottom:2px}
+    .h-sub{font-size:11px;color:#5DCAA5}
+
+    /* Cards */
+    .card{background:#fff;border-radius:16px;border:1px solid #e0e0e0;padding:1.25rem}
+    .card-title{font-size:14px;font-weight:600;color:#1a1a1a;margin-bottom:1rem}
+
+    /* Form */
+    .flbl{font-size:11px;color:#888;margin-bottom:4px;font-weight:500}
+    .finput{width:100%;padding:10px 12px;font-size:14px;border:1.5px solid #e0e0e0;border-radius:10px;background:#f9f9f9;color:#1a1a1a;margin-bottom:0.85rem;transition:border-color 0.2s;outline:none}
+    .finput:focus{border-color:#1D9E75;background:#fff}
+    .finput.err{border-color:#E24B4A}
+    .pw-wrap{position:relative;margin-bottom:0.85rem}
+    .pw-wrap .finput{margin-bottom:0;padding-right:42px}
+    .pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:#888;padding:4px}
+
+    /* Login button */
+    .login-btn{width:100%;padding:12px;background:#0F6E56;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;transition:background 0.2s,transform 0.1s;display:flex;align-items:center;justify-content:center;gap:8px}
+    .login-btn:hover{background:#085041}
+    .login-btn:active{transform:scale(0.98)}
+    .login-btn:disabled{background:#5DCAA5;cursor:not-allowed}
+
+    /* Error / success */
+    .msg{padding:10px 12px;border-radius:10px;font-size:13px;margin-bottom:0.75rem;display:none}
+    .msg.err{background:#FCEBEB;color:#A32D2D;border:1px solid #F09595;display:block}
+    .msg.ok{background:#E1F5EE;color:#085041;border:1px solid #5DCAA5;display:block}
+
+    /* Spinner */
+    .spin{width:16px;height:16px;border:2px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;animation:sp 0.7s linear infinite;display:none}
+    @keyframes sp{to{transform:rotate(360deg)}}
+
+    /* Status bar */
+    .status-bar{display:flex;align-items:center;gap:6px;font-size:11px;color:#888;background:#fff;border-radius:10px;border:1px solid #e0e0e0;padding:8px 12px}
+    .sdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+    .sdot-g{background:#1D9E75}
+    .sdot-y{background:#EF9F27;animation:bl 1s infinite}
+    .sdot-r{background:#E24B4A}
+    @keyframes bl{0%,100%{opacity:1}50%{opacity:0.3}}
+
+    /* Agent welcome screen */
+    .welcome{display:none;flex-direction:column;gap:0.85rem}
+    .agent-card{background:#fff;border-radius:16px;border:1px solid #e0e0e0;padding:1.25rem;text-align:center}
+    .agent-av{width:64px;height:64px;border-radius:50%;background:#1D9E75;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff;margin:0 auto 0.75rem}
+    .agent-name{font-size:18px;font-weight:600;color:#1a1a1a;margin-bottom:3px}
+    .agent-role{font-size:12px;color:#888;margin-bottom:0.75rem}
+    .lang-pills{display:flex;gap:5px;justify-content:center;flex-wrap:wrap;margin-bottom:1rem}
+    .lpill{font-size:11px;padding:3px 10px;border-radius:10px;background:#E1F5EE;color:#085041;font-weight:500}
+    .go-btn{width:100%;padding:12px;background:#1D9E75;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:8px}
+    .go-btn:hover{background:#0F6E56}
+    .logout-btn{width:100%;padding:10px;background:transparent;color:#888;border:1px solid #e0e0e0;border-radius:12px;font-size:13px;cursor:pointer}
+    .logout-btn:hover{background:#f5f5f0}
+
+    .footer{font-size:11px;color:#bbb;text-align:center}
+  </style>
+</head>
+<body>
+
+<!-- LOGIN FORM -->
+<div class="wrap" id="loginWrap">
+  <div class="header">
+    <div class="h-icon">🕌</div>
+    <div class="h-en">Madinah Guide</div>
+    <div class="h-ar">دليل المدينة المنورة</div>
+    <div class="h-sub">Agent portal · بوابة الوكيل</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Agent login — تسجيل دخول الوكيل</div>
+    <div class="msg" id="errMsg"></div>
+
+    <div class="flbl">Phone number · رقم الهاتف</div>
+    <input class="finput" id="phone" type="tel" placeholder="+966XXXXXXXXX" autocomplete="tel" onkeydown="if(event.key==='Enter')document.getElementById('password').focus()"/>
+
+    <div class="flbl">Password · كلمة المرور</div>
+    <div class="pw-wrap">
+      <input class="finput" id="password" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
+      <button class="pw-toggle" onclick="togglePw()" tabindex="-1">👁️</button>
+    </div>
+
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">
+      <div class="spin" id="spin"></div>
+      <span id="loginLbl">Login — تسجيل الدخول</span>
+    </button>
+  </div>
+
+  <div class="status-bar">
+    <div class="sdot sdot-y" id="sdot"></div>
+    <span id="statusLbl">Connecting to backend…</span>
+  </div>
+
+  <div class="footer">Madinah Guide · Agent portal · Secure login</div>
+</div>
+
+<!-- WELCOME / GO ONLINE -->
+<div class="wrap welcome" id="welcomeWrap">
+  <div class="header">
+    <div class="h-icon">🕌</div>
+    <div class="h-en">Madinah Guide</div>
+    <div class="h-ar">مرحباً بك</div>
+  </div>
+
+  <div class="agent-card">
+    <div class="agent-av" id="agentAv">AS</div>
+    <div class="agent-name" id="agentName">Agent</div>
+    <div class="agent-role" id="agentRole">Call center agent</div>
+    <div class="lang-pills" id="langPills"></div>
+    <button class="go-btn" onclick="goToDashboard()">Go online — الذهاب للوحة التحكم</button>
+    <button class="logout-btn" onclick="doLogout()">Logout — تسجيل الخروج</button>
+  </div>
+
+  <div class="status-bar">
+    <div class="sdot sdot-g"></div>
+    <span id="welcomeStatus">Logged in successfully ✓</span>
+  </div>
+</div>
+
+<script>
+const BACKEND = 'https://madinah-guide-backend-1.onrender.com';
+const LANG_NAMES = { ar:'🇸🇦 عربي', en:'🇬🇧 English', ur:'🇵🇰 اردو', fr:'🇫🇷 Français', id:'🇮🇩 Indonesia' };
+
+// ─── Check backend health ────────────────────────────────────────────────────
+async function checkHealth() {
+  try {
+    const r = await fetch(BACKEND + '/');
+    const d = await r.json();
+    if (d.status === 'ok') {
+      document.getElementById('sdot').className = 'sdot sdot-g';
+      document.getElementById('statusLbl').textContent = 'Backend connected ✓';
+    }
+  } catch(e) {
+    document.getElementById('sdot').className = 'sdot sdot-r';
+    document.getElementById('statusLbl').textContent = 'Backend offline — try again in 30s';
+  }
+}
+
+// ─── Check saved session ──────────────────────────────────────────────────────
+function checkSession() {
+  const token = sessionStorage.getItem('agent_token');
+  const agent = sessionStorage.getItem('agent_data');
+  if (token && agent) {
+    showWelcome(JSON.parse(agent));
+  }
+}
+
+// ─── Login ────────────────────────────────────────────────────────────────────
+async function doLogin() {
+  const phone    = document.getElementById('phone').value.trim();
+  const password = document.getElementById('password').value;
+  const errMsg   = document.getElementById('errMsg');
+
+  errMsg.className = 'msg';
+  errMsg.textContent = '';
+
+  if (!phone || !password) {
+    showErr('Please enter your phone number and password.');
+    return;
+  }
+
+  // set loading state
+  document.getElementById('loginBtn').disabled = true;
+  document.getElementById('spin').style.display = 'block';
+  document.getElementById('loginLbl').textContent = 'Logging in…';
+
+  try {
+    const res  = await fetch(BACKEND + '/auth/agent/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, password }),
+    });
+    const data = await res.json();
+
+    if (data.success && data.token) {
+      // save to session storage
+      sessionStorage.setItem('agent_token', data.token);
+      sessionStorage.setItem('agent_data', JSON.stringify(data.agent));
+      showWelcome(data.agent);
+    } else {
+      showErr(data.error || 'Invalid phone number or password.');
+    }
+  } catch(e) {
+    showErr('Cannot connect to server. Please check your connection.');
+  }
+
+  document.getElementById('loginBtn').disabled = false;
+  document.getElementById('spin').style.display = 'none';
+  document.getElementById('loginLbl').textContent = 'Login — تسجيل الدخول';
+}
+
+// ─── Show welcome screen ──────────────────────────────────────────────────────
+function showWelcome(agent) {
+  document.getElementById('loginWrap').style.display  = 'none';
+  document.getElementById('welcomeWrap').style.display = 'flex';
+
+  const initials = agent.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('agentAv').textContent   = initials;
+  document.getElementById('agentName').textContent = agent.name;
+  document.getElementById('agentRole').textContent = agent.role === 'senior_agent' ? 'Senior agent · وكيل أول' : 'Call center agent · وكيل مركز الاتصال';
+
+  const pills = document.getElementById('langPills');
+  pills.innerHTML = '';
+  (agent.languages || ['ar','en']).forEach(l => {
+    const span = document.createElement('span');
+    span.className = 'lpill';
+    span.textContent = LANG_NAMES[l] || l;
+    pills.appendChild(span);
+  });
+
+  document.getElementById('welcomeStatus').textContent = 'Welcome back, ' + agent.name + ' · أهلاً وسهلاً';
+}
+
+// ─── Go to dashboard ──────────────────────────────────────────────────────────
+function goToDashboard() {
+  // pass token to agent dashboard via URL hash
+  const token = sessionStorage.getItem('agent_token');
+  const agent = sessionStorage.getItem('agent_data');
+  window.location.href = 'agent.html#token=' + encodeURIComponent(token) + '&agent=' + encodeURIComponent(agent);
+}
+
+// ─── Logout ───────────────────────────────────────────────────────────────────
+function doLogout() {
+  sessionStorage.removeItem('agent_token');
+  sessionStorage.removeItem('agent_data');
+  document.getElementById('welcomeWrap').style.display = 'none';
+  document.getElementById('loginWrap').style.display   = 'flex';
+  document.getElementById('phone').value    = '';
+  document.getElementById('password').value = '';
+}
+
+// ─── Toggle password visibility ───────────────────────────────────────────────
+function togglePw() {
+  const inp = document.getElementById('password');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+// ─── Show error ───────────────────────────────────────────────────────────────
+function showErr(msg) {
+  const el = document.getElementById('errMsg');
+  el.textContent = msg;
+  el.className = 'msg err';
+  document.getElementById('phone').classList.add('err');
+  document.getElementById('password').classList.add('err');
+  setTimeout(() => {
+    document.getElementById('phone').classList.remove('err');
+    document.getElementById('password').classList.remove('err');
+  }, 3000);
+}
+
+// ─── Boot ─────────────────────────────────────────────────────────────────────
+checkHealth();
+checkSession();
+</script>
+</body>
+</html>
