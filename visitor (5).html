@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Madinah Guide — Call Agent</title>
+  <script src="https://unpkg.com/@daily-co/daily-js"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem}
+    .app{background:#fff;border-radius:20px;border:1px solid #e0e0e0;width:100%;max-width:380px;overflow:hidden}
+    .topbar{background:#085041;padding:1rem;display:flex;align-items:center;gap:10px}
+    .tb-icon{width:34px;height:34px;border-radius:8px;background:#1D9E75;display:flex;align-items:center;justify-content:center;font-size:18px}
+    .tb-en{font-size:15px;font-weight:600;color:#fff}
+    .tb-ar{font-size:11px;color:#9FE1CB}
+    .bpill{margin-left:auto;font-size:10px;padding:3px 9px;border-radius:10px;font-weight:600;display:flex;align-items:center;gap:4px}
+    .p-ok{background:#E1F5EE;color:#085041}
+    .p-err{background:#FCEBEB;color:#791F1F}
+    .p-chk{background:#FAEEDA;color:#633806}
+    .lang-bar{border-bottom:1px solid #eee;padding:0.6rem 1rem;display:flex;gap:6px;overflow-x:auto}
+    .lb{font-size:11px;padding:4px 10px;border-radius:12px;border:1px solid #ddd;color:#666;cursor:pointer;white-space:nowrap}
+    .lb.on{background:#E1F5EE;color:#085041;border-color:#5DCAA5;font-weight:600}
+    .body{padding:1.25rem;display:flex;flex-direction:column;gap:1rem}
+    .call-card{text-align:center;padding:1.25rem;background:#f9f9f9;border-radius:16px}
+    .ring{width:72px;height:72px;border-radius:50%;background:#1D9E75;display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 0.75rem;transition:all 0.3s}
+    .ring.ringing{animation:rng 0.8s ease-in-out infinite,pls 1.5s ease-out infinite}
+    .ring.connected{background:#085041}
+    @keyframes rng{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+    @keyframes pls{0%{box-shadow:0 0 0 0 rgba(29,158,117,0.5)}70%{box-shadow:0 0 0 18px rgba(29,158,117,0)}100%{box-shadow:0 0 0 0 rgba(29,158,117,0)}}
+    .cname{font-size:16px;font-weight:600;color:#1a1a1a;margin-bottom:3px}
+    .crole{font-size:12px;color:#888;margin-bottom:1rem}
+    .cstatus{font-size:13px;font-weight:600;margin-bottom:0.5rem;min-height:20px}
+    .s-ready{color:#888}.s-conn{color:#BA7517}.s-ok{color:#0F6E56}.s-end{color:#888}.s-err{color:#A32D2D}
+    .ctimer{font-size:28px;font-weight:600;color:#1a1a1a;min-height:36px;margin-bottom:0.75rem}
+    .wave{display:flex;align-items:center;justify-content:center;gap:4px;height:28px;margin-bottom:1rem}
+    .wb{width:4px;border-radius:2px;background:#1D9E75;height:4px}
+    .wb.a{animation:wv 0.6s ease-in-out infinite}
+    .wb:nth-child(2){animation-delay:.1s}.wb:nth-child(3){animation-delay:.2s}.wb:nth-child(4){animation-delay:.3s}.wb:nth-child(5){animation-delay:.15s}.wb:nth-child(6){animation-delay:.25s}
+    @keyframes wv{0%,100%{height:4px}50%{height:24px}}
+    .cbtns{display:flex;justify-content:center;gap:1.25rem;margin-bottom:0.75rem}
+    .cbtn{width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;font-size:22px;transition:transform 0.1s}
+    .cbtn:active{transform:scale(0.92)}
+    .btn-call{background:#1D9E75;box-shadow:0 4px 12px rgba(29,158,117,0.35)}
+    .btn-end{background:#E24B4A;box-shadow:0 4px 12px rgba(226,75,74,0.35)}
+    .btn-side{background:#f0f0f0;border:1px solid #ddd}
+    .btn-side.on{background:#FAEEDA;border-color:#FAC775}
+    .btn-side.off{opacity:0.35}
+    .btn-side:disabled{opacity:0.3;cursor:not-allowed}
+    .chint{font-size:11px;color:#888}
+    .audio-bar{background:#E1F5EE;border-radius:10px;padding:0.6rem 0.85rem;font-size:12px;color:#085041;display:none;align-items:center;gap:8px}
+    .adot{width:8px;height:8px;border-radius:50%;background:#1D9E75;animation:pls2 1s ease-in-out infinite}
+    @keyframes pls2{0%,100%{opacity:1}50%{opacity:0.3}}
+    .qcard{background:#fff;border-radius:12px;border:1px solid #eee;padding:0.85rem;display:none}
+    .qtitle{font-size:11px;font-weight:600;color:#888;margin-bottom:0.5rem}
+    .qrow{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid #f0f0f0;font-size:12px}
+    .qrow:last-child{border-bottom:none}
+    .qpos{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600}
+    .qpos.me{background:#1D9E75;color:#fff}
+    .qpos.oth{background:#E1F5EE;color:#085041}
+    .qlang{font-size:10px;padding:1px 6px;border-radius:6px;background:#EEEDFE;color:#3C3489}
+    .logcard{background:#f9f9f9;border-radius:12px;padding:0.75rem}
+    .logtitle{font-size:11px;font-weight:600;color:#888;margin-bottom:6px}
+    .log{font-size:10px;color:#666;font-family:monospace;line-height:1.8;max-height:110px;overflow-y:auto}
+    .lok{color:#0F6E56;display:block}.lerr{color:#A32D2D;display:block}.linf{color:#185FA5;display:block}
+  </style>
+</head>
+<body>
+<audio id="remoteAudio" autoplay playsinline style="display:none"></audio>
+<div class="app">
+  <div class="topbar">
+    <div class="tb-icon">🕌</div>
+    <div><div class="tb-en">Madinah Guide</div><div class="tb-ar">دليل المدينة المنورة</div></div>
+    <div class="bpill p-chk" id="bpill">
+      <div style="width:6px;height:6px;border-radius:50%;background:#EF9F27" id="bdot"></div>
+      <span id="blbl">Connecting…</span>
+    </div>
+  </div>
+  <div class="lang-bar">
+    <div class="lb on" onclick="setLang(this,'ar','عربي')">🇸🇦 عربي</div>
+    <div class="lb" onclick="setLang(this,'en','English')">🇬🇧 English</div>
+    <div class="lb" onclick="setLang(this,'ur','اردو')">🇵🇰 اردو</div>
+    <div class="lb" onclick="setLang(this,'fr','Français')">🇫🇷 Français</div>
+    <div class="lb" onclick="setLang(this,'id','Indonesia')">🇮🇩 Indonesia</div>
+  </div>
+  <div class="body">
+    <div class="audio-bar" id="audioBar">
+      <div class="adot"></div>
+      <span>🎙️ Audio connected — you can speak now!</span>
+    </div>
+    <div class="call-card">
+      <div class="ring" id="ring">🧑‍💼</div>
+      <div class="cname" id="cname">Madinah Guide</div>
+      <div class="crole" id="crole">Human agent — speaks your language</div>
+      <div class="cstatus s-ready" id="cstatus">Ready to connect you</div>
+      <div class="ctimer" id="ctimer"></div>
+      <div class="wave"><div class="wb" id="w1"></div><div class="wb" id="w2"></div><div class="wb" id="w3"></div><div class="wb" id="w4"></div><div class="wb" id="w5"></div><div class="wb" id="w6"></div></div>
+      <div class="cbtns">
+        <button class="cbtn btn-side" id="muteBtn" onclick="toggleMute()" disabled>🎙️</button>
+        <button class="cbtn btn-call" id="mainBtn" onclick="toggleCall()">📞</button>
+        <button class="cbtn btn-side" id="spkBtn" disabled>🔊</button>
+      </div>
+      <div class="chint" id="chint">Tap 📞 to call a human agent — free via internet</div>
+    </div>
+    <div class="qcard" id="qcard">
+      <div class="qtitle">Your position in queue</div>
+      <div id="qrows"></div>
+    </div>
+    <div class="logcard">
+      <div class="logtitle">Connection log</div>
+      <div class="log" id="logEl"><span class="linf">Initialising…</span></div>
+    </div>
+  </div>
+</div>
+<script>
+const BACKEND = 'https://madinah-guide-backend-1.onrender.com';
+const DAILY_DOMAIN = 'medinah-guide';
+const visitorId = 'visitor-' + Math.random().toString(36).slice(2,10);
+let inCall=false, muted=false, callSecs=0;
+let callInterval=null, pollInterval=null, callFrame=null;
+let curLang='ar', curLangLabel='عربي';
+
+function log(msg,t='inf'){const e=document.getElementById('logEl');const s=document.createElement('span');s.className='l'+t;s.textContent=new Date().toLocaleTimeString()+' — '+msg;e.appendChild(s);e.scrollTop=e.scrollHeight;}
+function fmt(s){return Math.floor(s/60)+':'+(s%60<10?'0':'')+s%60;}
+function setWave(on){document.querySelectorAll('.wb').forEach((b,i)=>{b.classList.toggle('a',on);b.style.animationDelay=(i*0.08)+'s';});}
+function setStatus(msg,cls){const e=document.getElementById('cstatus');e.textContent=msg;e.className='cstatus '+cls;}
+function setLang(el,l,lb){curLang=l;curLangLabel=lb;document.querySelectorAll('.lb').forEach(x=>x.classList.remove('on'));el.classList.add('on');}
+
+async function checkHealth(){
+  try{const r=await fetch(BACKEND+'/');const d=await r.json();
+    if(d.status==='ok'){document.getElementById('bpill').className='bpill p-ok';document.getElementById('bdot').style.background='#1D9E75';document.getElementById('blbl').textContent='Backend live';log('Backend live ✓','ok');}
+  }catch(e){document.getElementById('bpill').className='bpill p-err';document.getElementById('bdot').style.background='#E24B4A';document.getElementById('blbl').textContent='Offline';log('Backend offline — '+e.message,'err');}
+}
+
+async function toggleCall(){if(!inCall)await startCall();else await endCall();}
+
+async function startCall(){
+  inCall=true;
+  document.getElementById('mainBtn').textContent='📵';
+  document.getElementById('mainBtn').className='cbtn btn-end';
+  document.getElementById('muteBtn').disabled=false;
+  document.getElementById('ring').className='ring ringing';
+  setStatus('Joining queue…','s-conn');
+  document.getElementById('chint').textContent='Please wait — finding an available agent';
+  log('Joining queue as '+curLangLabel+'…','inf');
+  try{
+    const r=await fetch(BACKEND+'/visitor/queue',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({visitorId,name:'Visitor ('+curLangLabel+')',language:curLang,visitorType:'pilgrim'})});
+    const d=await r.json();
+    if(!d.success)throw new Error('Queue join failed');
+    setStatus('You are #'+d.position+' in queue','s-conn');
+    document.getElementById('chint').textContent='Agent will answer shortly';
+    document.getElementById('qcard').style.display='block';
+    log('Joined queue at position '+d.position,'ok');
+    showQueue(d.position,d.queueLength);
+    notFoundCount = 0;
+    pollInterval=setInterval(pollQueue,3000);
+  }catch(e){log('Error — '+e.message,'err');setStatus('Could not connect','s-err');resetUI();}
+}
+
+let notFoundCount = 0; // grace counter for not-found
+
+async function pollQueue(){
+  try{
+    const r=await fetch(BACKEND+'/visitor/queue/'+visitorId);
+    const d=await r.json();
+    if(d.status==='in-call'){
+      notFoundCount = 0;
+      clearInterval(pollInterval);
+      log('Agent answered — joining room now…','ok');
+      await joinRoom(d.roomName, d.token, d.roomUrl);
+    }
+    else if(d.status==='queued'){
+      notFoundCount = 0;
+      setStatus('You are #'+d.position+' in queue','s-conn');
+      showQueue(d.position,d.queueLength);
+      if(d.roomUrl) log('Room ready: '+d.roomUrl,'inf');
+    }
+    else if(d.status==='not-found' && inCall){
+      // give 5 retries (~15 seconds) before giving up
+      // agent may be in the process of answering right now
+      notFoundCount++;
+      log('Waiting for agent to connect… ('+notFoundCount+'/5)','inf');
+      if(notFoundCount >= 5){
+        clearInterval(pollInterval);
+        log('No agent connected after waiting — ending call','err');
+        await endCall();
+      }
+    }
+  }catch(e){log('Poll error — '+e.message,'err');}
+}
+
+async function joinRoom(roomName, token, roomUrl){
+  log('Agent answered! Joining room: '+roomName,'ok');
+  setStatus('Connecting audio…','s-conn');
+
+  // use the exact URL from backend if available, otherwise build it
+  // always use the exact URL returned by Daily.co API — never build it manually
+  if(!roomUrl){ log('ERROR: No room URL from backend — check server logs','err'); setStatus('Server error — no room URL','s-err'); return; }
+  const url = roomUrl;
+  log('Room URL: '+url,'inf');
+  log('Token received: '+(token?'yes ✓':'MISSING ✗'),'inf');
+
+  if(!token){ log('ERROR: No token received from backend','err'); setStatus('Auth error — no token','s-err'); return; }
+
+  try{
+    // destroy any existing frame first
+    if(callFrame){ try{callFrame.destroy();}catch(e){} callFrame=null; }
+
+    // createCallObject = pure WebRTC, no iframe — works on github.io
+    callFrame = window.DailyIframe.createCallObject({
+      audioSource: true,
+      videoSource: false,
+    });
+    callFrame.on('joining-meeting', ()=>{ log('Joining room…','inf'); });
+    callFrame.on('joined-meeting',  ()=>{ log('🎙️ Audio connected — speak now!','ok'); onConnected(roomName); });
+    callFrame.on('left-meeting',    ()=>{ if(inCall) endCall(); });
+    callFrame.on('error', e=>{ log('Daily.co error: '+JSON.stringify(e),'err'); setStatus('Audio error','s-err'); });
+    callFrame.on('participant-joined', ()=>{ log('Agent joined — both can hear each other ✓','ok'); });
+    callFrame.on('track-started', (e)=>{
+      if(e.track && e.track.kind === 'audio' && e.participant && !e.participant.local){
+        log('Remote audio track received — attaching to speaker…','ok');
+        const audio = document.getElementById('remoteAudio');
+        if(audio){
+          const stream = new MediaStream([e.track]);
+          audio.srcObject = stream;
+          audio.play().then(()=>{ log('🔊 Speaker output active ✓','ok'); })
+               .catch(err=>{ log('Speaker error: '+err.message,'err'); });
+        }
+      }
+    });
+    callFrame.on('participant-left',   ()=>{ log('Agent left the room','inf'); });
+
+    log('Connecting via WebRTC ✓','inf');
+    await Promise.race([
+      callFrame.join({ url, token }),
+      new Promise((_,reject) => setTimeout(()=>reject(new Error('Timeout after 30s')), 30000))
+    ]);
+
+  }catch(e){
+    log('Join failed: '+e.message,'err');
+    setStatus('Audio failed — '+e.message,'s-err');
+  }
+}
+
+function onConnected(roomName){
+  setStatus('Connected ✓ — you can speak now','s-ok');
+  document.getElementById('ring').className='ring connected';
+  document.getElementById('ring').textContent='👨';
+  document.getElementById('cname').textContent='Abdulrahman S.';
+  document.getElementById('crole').textContent='Senior guide · '+curLangLabel;
+  document.getElementById('chint').textContent='Tap 📵 to end the call';
+  document.getElementById('qcard').style.display='none';
+  document.getElementById('audioBar').style.display='flex';
+  setWave(true);
+  callSecs=0;
+  callInterval=setInterval(()=>{callSecs++;document.getElementById('ctimer').textContent=fmt(callSecs);},1000);
+}
+
+async function endCall(){
+  clearInterval(callInterval);clearInterval(pollInterval);
+  if(callFrame){try{await callFrame.leave();callFrame.destroy();}catch(e){}callFrame=null;}
+  try{await fetch(BACKEND+'/visitor/queue/'+visitorId,{method:'DELETE'});}catch(e){}
+  document.getElementById('audioBar').style.display='none';
+  document.getElementById('qcard').style.display='none';
+  setStatus('Call ended · شكراً · Thank you','s-end');
+  document.getElementById('ctimer').textContent='';
+  document.getElementById('chint').textContent='Tap 📞 to call again';
+  setWave(false);
+  log('Call ended. Duration: '+fmt(callSecs),'ok');
+  resetUI();
+}
+
+function toggleMute(){
+  if(!callFrame)return;
+  muted=!muted;
+  callFrame.setLocalAudio(!muted);
+  document.getElementById('muteBtn').textContent=muted?'🔇':'🎙️';
+  document.getElementById('muteBtn').classList.toggle('on',muted);
+  log(muted?'Muted':'Unmuted','inf');
+}
+
+function resetUI(){
+  inCall=false;
+  document.getElementById('mainBtn').textContent='📞';
+  document.getElementById('mainBtn').className='cbtn btn-call';
+  document.getElementById('ring').className='ring';
+  document.getElementById('ring').textContent='🧑‍💼';
+  document.getElementById('cname').textContent='Madinah Guide';
+  document.getElementById('crole').textContent='Human agent — speaks your language';
+  document.getElementById('muteBtn').disabled=true;
+}
+
+function showQueue(pos,total){
+  const rows=document.getElementById('qrows');rows.innerHTML='';
+  for(let i=1;i<=Math.min(total,4);i++){
+    const isMe=i===pos;const div=document.createElement('div');div.className='qrow';
+    div.innerHTML=`<div class="qpos ${isMe?'me':'oth'}">${i}</div><span style="flex:1;color:#1a1a1a">${isMe?'You ('+curLangLabel+')':'Visitor #'+i}</span><span style="color:#888;font-size:11px">${isMe?'Waiting…':Math.floor(Math.random()*4+1)+'m'}</span><span class="qlang">${isMe?curLangLabel:['EN','عربي','اردو'][i%3]}</span>`;
+    rows.appendChild(div);
+  }
+}
+
+checkHealth();
+
+// pre-warm microphone on page load so permission is ready before call
+async function prewarmMic(){
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({ audio:true, video:false });
+    stream.getTracks().forEach(t=>t.stop());
+    log('Microphone access ready ✓','ok');
+  } catch(e){
+    log('Microphone blocked — please allow mic in browser settings','err');
+  }
+}
+prewarmMic();
+</script>
+</body>
+</html>
