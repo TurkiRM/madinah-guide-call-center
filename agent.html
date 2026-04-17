@@ -167,6 +167,7 @@
       </div>
       <div class="ac-btns">
         <div class="abtn mute" id="agMuteBtn" onclick="toggleAgentMute()">🎙️ Mute</div>
+        <div class="abtn mute" id="agSpkBtn" onclick="toggleAgentSpeaker()" style="background:#E1F5EE;color:#085041;border-color:#5DCAA5">🔊 Speaker</div>
         <div class="abtn hold" onclick="toggleHold()">⏸ Hold</div>
         <div class="abtn end" onclick="endActiveCall()">✕ End call</div>
       </div>
@@ -461,6 +462,30 @@ function toggleAgentMute(){
   btn.textContent=agentMuted?'🔇 Unmute':'🎙️ Mute';
   btn.classList.toggle('on',agentMuted);
   mlog(agentMuted?'Agent muted':'Agent unmuted','inf');
+}
+
+let agentSpeakerOn=true;
+async function toggleAgentSpeaker(){
+  const audio=document.getElementById('remoteAudio');
+  const btn=document.getElementById('agSpkBtn');
+  if(!audio)return;
+  agentSpeakerOn=!agentSpeakerOn;
+  if('setSinkId' in audio){
+    try{
+      const devices=await navigator.mediaDevices.enumerateDevices();
+      const outputs=devices.filter(d=>d.kind==='audiooutput');
+      const spkDev=outputs.find(d=>d.label.toLowerCase().includes('speaker'));
+      const earDev=outputs.find(d=>d.label.toLowerCase().includes('earpiece')||d.label.toLowerCase().includes('receiver'));
+      if(agentSpeakerOn&&spkDev) await audio.setSinkId(spkDev.deviceId);
+      else if(!agentSpeakerOn&&earDev) await audio.setSinkId(earDev.deviceId);
+      else await audio.setSinkId(agentSpeakerOn?(outputs[0]?.deviceId||''):'');
+    }catch(e){console.warn('setSinkId:',e.message);}
+  }
+  audio.volume=agentSpeakerOn?1.0:0.25;
+  btn.textContent=agentSpeakerOn?'🔊 Speaker':'🔇 Earpiece';
+  btn.style.background=agentSpeakerOn?'#E1F5EE':'#f9f9f9';
+  btn.style.color=agentSpeakerOn?'#085041':'#888';
+  mlog(agentSpeakerOn?'Speaker on':'Earpiece mode','inf');
 }
 
 function toggleHold(){mlog('Visitor placed on hold','inf');alert('Visitor is on hold.\nIn production Daily.co plays hold music automatically.');}
