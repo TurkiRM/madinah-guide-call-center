@@ -131,6 +131,43 @@ async function checkHealth(){
   }catch(e){document.getElementById('bpill').className='bpill p-err';document.getElementById('bdot').style.background='#E24B4A';document.getElementById('blbl').textContent='Offline';log('Backend offline — '+e.message,'err');}
 }
 
+
+// ── Ringtone (Web Audio API — no external file needed) ────────────────────────
+let ringCtx=null, ringNodes=[], ringInterval=null;
+
+function startRingtone(){
+  try{
+    ringCtx = new (window.AudioContext||window.webkitAudioContext)();
+    let count=0;
+    function ring(){
+      if(count++>30)return;
+      const o1=ringCtx.createOscillator();
+      const o2=ringCtx.createOscillator();
+      const g=ringCtx.createGain();
+      o1.frequency.value=480; o2.frequency.value=440;
+      o1.type='sine'; o2.type='sine';
+      g.gain.setValueAtTime(0,ringCtx.currentTime);
+      g.gain.linearRampToValueAtTime(0.18,ringCtx.currentTime+0.05);
+      g.gain.setValueAtTime(0.18,ringCtx.currentTime+0.35);
+      g.gain.linearRampToValueAtTime(0,ringCtx.currentTime+0.45);
+      o1.connect(g); o2.connect(g); g.connect(ringCtx.destination);
+      o1.start(); o2.start();
+      o1.stop(ringCtx.currentTime+0.45);
+      o2.stop(ringCtx.currentTime+0.45);
+      ringNodes.push(o1,o2,g);
+    }
+    ring();
+    ringInterval=setInterval(ring,1200);
+  }catch(e){console.warn('Ringtone:',e);}
+}
+
+function stopRingtone(){
+  if(ringInterval){clearInterval(ringInterval);ringInterval=null;}
+  ringNodes.forEach(n=>{try{n.disconnect();}catch(e){}});
+  ringNodes=[];
+  if(ringCtx){try{ringCtx.close();}catch(e){}ringCtx=null;}
+}
+
 async function toggleCall(){if(!inCall)await startCall();else await endCall();}
 
 async function startCall(){
@@ -141,6 +178,7 @@ async function startCall(){
   const spk=document.getElementById('spkBtn');spk.disabled=false;spk.style.background='#1D9E75';spk.style.color='#fff';
   document.getElementById('ring').className='ring ringing';
   setStatus('Joining queue…','s-conn');
+  startRingtone();
   document.getElementById('chint').textContent='Please wait — finding an available agent';
   log('Joining queue as '+curLangLabel+'…','inf');
   try{
@@ -191,6 +229,7 @@ async function pollQueue(){
 
 async function joinRoom(roomName, token, roomUrl){
   log('Agent answered! Joining room: '+roomName,'ok');
+  stopRingtone();
   setStatus('Connecting audio…','s-conn');
 
   // use the exact URL from backend if available, otherwise build it
@@ -305,6 +344,7 @@ async function toggleSpeaker(){
 }
 
 function resetUI(){
+  stopRingtone();
   inCall=false;
   document.getElementById('mainBtn').textContent='📞';
   document.getElementById('mainBtn').className='cbtn btn-call';
