@@ -306,7 +306,11 @@ async function loadDash(){
   }catch(e){setB('err');mlog('Refresh failed — '+e.message,'err');}
 }
 
+let lastQueueLen=0;
 function renderQueue(queue){
+  if(queue.length>0&&lastQueueLen===0)startAgentRingtone();
+  if(queue.length===0)stopAgentRingtone();
+  lastQueueLen=queue.length;
   const el=document.getElementById('qlist');
   if(!queue.length){el.innerHTML='<div class="qempty">No visitors in queue right now 🕊️</div>';return;}
   el.innerHTML='';
@@ -330,7 +334,44 @@ function renderAgents(agents){
   });
 }
 
+
+// ── Agent incoming call tone ──────────────────────────────────────────────────
+let agRingCtx=null, agRingNodes=[], agRingInterval=null;
+
+function startAgentRingtone(){
+  try{
+    agRingCtx = new (window.AudioContext||window.webkitAudioContext)();
+    let count=0;
+    function ring(){
+      if(count++>5)return; // 5 rings max — agent should answer
+      [0,0.15].forEach(delay=>{
+        const o=agRingCtx.createOscillator();
+        const g=agRingCtx.createGain();
+        o.frequency.value=880;
+        o.type='sine';
+        g.gain.setValueAtTime(0,agRingCtx.currentTime+delay);
+        g.gain.linearRampToValueAtTime(0.15,agRingCtx.currentTime+delay+0.03);
+        g.gain.setValueAtTime(0.15,agRingCtx.currentTime+delay+0.12);
+        g.gain.linearRampToValueAtTime(0,agRingCtx.currentTime+delay+0.18);
+        o.connect(g); g.connect(agRingCtx.destination);
+        o.start(); o.stop(agRingCtx.currentTime+delay+0.2);
+        agRingNodes.push(o,g);
+      });
+    }
+    ring();
+    agRingInterval=setInterval(ring,2000);
+  }catch(e){console.warn('Agent ringtone:',e);}
+}
+
+function stopAgentRingtone(){
+  if(agRingInterval){clearInterval(agRingInterval);agRingInterval=null;}
+  agRingNodes.forEach(n=>{try{n.disconnect();}catch(e){}});
+  agRingNodes=[];
+  if(agRingCtx){try{agRingCtx.close();}catch(e){}agRingCtx=null;}
+}
+
 async function answerCall(visitorId,name,lang,type){
+  stopAgentRingtone();
   mlog('Answering call from '+name+'…','inf');
   try{
     const r=await fetch(BACKEND+'/agent/'+agentId+'/answer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({visitorId})});
