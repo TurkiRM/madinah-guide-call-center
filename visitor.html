@@ -97,7 +97,7 @@
       <div class="cbtns">
         <button class="cbtn btn-side" id="muteBtn" onclick="toggleMute()" disabled>🎙️</button>
         <button class="cbtn btn-call" id="mainBtn" onclick="toggleCall()">📞</button>
-        <button class="cbtn btn-side" id="spkBtn" disabled>🔊</button>
+        <button class="cbtn btn-side" id="spkBtn" onclick="toggleSpeaker()" disabled>🔊</button>
       </div>
       <div class="chint" id="chint">Tap 📞 to call a human agent — free via internet</div>
     </div>
@@ -138,6 +138,7 @@ async function startCall(){
   document.getElementById('mainBtn').textContent='📵';
   document.getElementById('mainBtn').className='cbtn btn-end';
   document.getElementById('muteBtn').disabled=false;
+  const spk=document.getElementById('spkBtn');spk.disabled=false;spk.style.background='#1D9E75';spk.style.color='#fff';
   document.getElementById('ring').className='ring ringing';
   setStatus('Joining queue…','s-conn');
   document.getElementById('chint').textContent='Please wait — finding an available agent';
@@ -278,6 +279,31 @@ function toggleMute(){
   log(muted?'Muted':'Unmuted','inf');
 }
 
+let speakerOn=true;
+async function toggleSpeaker(){
+  const audio=document.getElementById('remoteAudio');
+  const btn=document.getElementById('spkBtn');
+  if(!audio)return;
+  speakerOn=!speakerOn;
+  // Try setSinkId for real device switching (works on Chrome/Android)
+  if('setSinkId' in audio){
+    try{
+      const devices=await navigator.mediaDevices.enumerateDevices();
+      const outputs=devices.filter(d=>d.kind==='audiooutput');
+      const spkDev=outputs.find(d=>d.label.toLowerCase().includes('speaker'));
+      const earDev=outputs.find(d=>d.label.toLowerCase().includes('earpiece')||d.label.toLowerCase().includes('receiver'));
+      if(speakerOn&&spkDev) await audio.setSinkId(spkDev.deviceId);
+      else if(!speakerOn&&earDev) await audio.setSinkId(earDev.deviceId);
+      else await audio.setSinkId(speakerOn?(outputs[0]?.deviceId||''):'');
+    }catch(e){console.warn('setSinkId:',e.message);}
+  }
+  // Visual + volume feedback
+  audio.volume=speakerOn?1.0:0.25;
+  btn.textContent=speakerOn?'🔊':'🔇';
+  btn.style.background=speakerOn?'#1D9E75':'#888';
+  log(speakerOn?'Speaker on':'Earpiece mode','inf');
+}
+
 function resetUI(){
   inCall=false;
   document.getElementById('mainBtn').textContent='📞';
@@ -287,6 +313,8 @@ function resetUI(){
   document.getElementById('cname').textContent='Madinah Guide';
   document.getElementById('crole').textContent='Human agent — speaks your language';
   document.getElementById('muteBtn').disabled=true;
+  const spk=document.getElementById('spkBtn');spk.disabled=true;spk.style.background='';spk.style.color='';spk.textContent='🔊';
+  speakerOn=true;
 }
 
 function showQueue(pos,total){
