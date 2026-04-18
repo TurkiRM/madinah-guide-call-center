@@ -179,6 +179,7 @@
     <div class="tab on" id="tab-overview" onclick="showTab('overview',this)">📊 Overview</div>
     <div class="tab" id="tab-agents"   onclick="showTab('agents',this)">👥 Agents</div>
     <div class="tab" id="tab-logs"      onclick="showTab('logs',this)">📋 Call logs</div>
+    <div class="tab" id="tab-reviews"   onclick="showTab('reviews',this)">⭐ Reviews</div>
     <div class="tab" id="tab-businesses" onclick="showTab('businesses',this)">🏪 Businesses</div>
   </div>
 
@@ -224,6 +225,54 @@
         </div>
         <div id="agentRows"><div class="ql-empty">Loading…</div></div>
       </div>
+    </div>
+
+    <!-- BUSINESSES -->
+    <!-- PLACE REVIEWS -->
+    <div class="scr" id="scr-reviews">
+      <div class="section-title">Seed a review</div>
+
+      <!-- Seed form -->
+      <div style="background:#fff;border-radius:14px;border:1px solid #e0e0e0;padding:1rem;margin-bottom:1rem;display:flex;flex-direction:column;gap:10px">
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <select id="rvPlace" style="flex:1;padding:9px 12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;outline:none">
+            <option value="">— Select place —</option>
+          </select>
+          <select id="rvStars" style="width:110px;padding:9px 12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;outline:none">
+            <option value="5">★★★★★ 5</option>
+            <option value="4">★★★★☆ 4</option>
+            <option value="3">★★★☆☆ 3</option>
+            <option value="2">★★☆☆☆ 2</option>
+            <option value="1">★☆☆☆☆ 1</option>
+          </select>
+        </div>
+
+        <input id="rvSeedName" placeholder="Reviewer name (e.g. Ahmed from Riyadh)" style="padding:9px 12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;outline:none;font-family:inherit"/>
+        <input id="rvSeedNat" placeholder="Nationality / Country" style="padding:9px 12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;outline:none;font-family:inherit"/>
+
+        <textarea id="rvSeedEn" placeholder="Review in English (required)" rows="2"
+          style="padding:9px 12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;resize:none;outline:none;font-family:inherit"></textarea>
+        <textarea id="rvSeedAr" placeholder="التقييم بالعربية (مطلوب)" rows="2" dir="rtl"
+          style="padding:9px 12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;resize:none;outline:none;font-family:inherit;text-align:right"></textarea>
+
+        <div style="display:flex;gap:8px;align-items:center">
+          <button onclick="seedReview()" style="padding:10px 20px;background:#085041;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">
+            ✅ Add seeded review
+          </button>
+          <span id="rvSeedMsg" style="font-size:13px"></span>
+        </div>
+      </div>
+
+      <!-- All reviews list -->
+      <div class="section-title" style="margin-top:0.5rem">
+        All place reviews
+        <button class="refresh-btn" onclick="loadAllReviews()">↻ Refresh</button>
+        <select id="filterReviewPlace" onchange="loadAllReviews()" style="margin-left:8px;padding:5px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12px">
+          <option value="">All places</option>
+        </select>
+      </div>
+      <div id="allReviewsList"><div class="ql-empty">Loading…</div></div>
     </div>
 
     <!-- BUSINESSES -->
@@ -409,6 +458,108 @@ function showTab(name,el){
   if(name==='agents')     loadAgents();
   if(name==='logs')       loadLogs();
   if(name==='businesses') loadBusinesses();
+  if(name==='reviews')    initReviewsTab();
+}
+
+// ── PLACE REVIEWS TAB ─────────────────────────────────────────────────────────
+const PLACES_LIST = [
+  {id:1,name:'Al-Masjid an-Nabawi'},{id:2,name:'Quba Mosque'},{id:3,name:'Masjid al-Qiblatayn'},
+  {id:4,name:'Seven Mosques'},{id:5,name:'Al-Ghamamah Mosque'},{id:6,name:'Mount Uhud'},
+  {id:7,name:'Al-Baqi Cemetery'},{id:8,name:'Wadi Al-Aqiq'},{id:9,name:'Mount Ayr'},
+  {id:10,name:'Dar Al Madinah Museum'},{id:11,name:'King Fahd Quran Complex'},
+  {id:12,name:"International Prophet's Biography Museum"},{id:13,name:'Hijaz Railway Museum'},
+  {id:14,name:'Kiffa Roasters'},{id:15,name:'ROW Specialty Coffee'},{id:16,name:'8oz Coffee'},
+  {id:17,name:'Namq Cafe'},{id:18,name:'Tyam Cafe'},{id:19,name:'Raslania'},
+  {id:20,name:'Town Pour'},{id:21,name:'Coffeematics'},{id:22,name:'Mathna Cafe'},{id:23,name:'Osar Roastery'},
+];
+
+function initReviewsTab(){
+  // Populate place dropdowns
+  const opts = PLACES_LIST.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  document.getElementById('rvPlace').innerHTML = '<option value="">— Select place —</option>' + opts;
+  document.getElementById('filterReviewPlace').innerHTML = '<option value="">All places</option>' + opts;
+  loadAllReviews();
+}
+
+async function seedReview(){
+  const placeId  = document.getElementById('rvPlace').value;
+  const stars    = document.getElementById('rvStars').value;
+  const name     = document.getElementById('rvSeedName').value.trim();
+  const nat      = document.getElementById('rvSeedNat').value.trim();
+  const commentEn= document.getElementById('rvSeedEn').value.trim();
+  const commentAr= document.getElementById('rvSeedAr').value.trim();
+  const msg      = document.getElementById('rvSeedMsg');
+
+  if(!placeId||!name||!commentEn||!commentAr){
+    msg.style.color='#A32D2D';
+    msg.textContent='Please fill in: place, name, English review and Arabic review';
+    return;
+  }
+
+  msg.style.color='#888'; msg.textContent='Saving…';
+  try{
+    const r = await fetch(`${BACKEND}/manager/places/${placeId}/reviews`,{
+      method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+mgrToken},
+      body:JSON.stringify({visitor_name:name, nationality:nat||null, stars:parseInt(stars), comment:commentEn, comment_ar:commentAr, language:'en'})
+    });
+    const d = await r.json();
+    if(!d.success) throw new Error(d.error);
+    msg.style.color='#0F6E56'; msg.textContent='✅ Review added!';
+    // Clear form
+    ['rvSeedName','rvSeedNat','rvSeedEn','rvSeedAr'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('rvPlace').value='';
+    setTimeout(()=>loadAllReviews(), 500);
+  } catch(e){
+    msg.style.color='#A32D2D'; msg.textContent='Error: '+e.message;
+  }
+}
+
+async function loadAllReviews(){
+  const el = document.getElementById('allReviewsList');
+  const placeFilter = document.getElementById('filterReviewPlace')?.value;
+  el.innerHTML='<div class="ql-empty">Loading…</div>';
+  try{
+    const url = placeFilter
+      ? `${BACKEND}/manager/places/reviews?place_key=place_${placeFilter}`
+      : `${BACKEND}/manager/places/reviews`;
+    const r = await fetch(url,{headers:{Authorization:'Bearer '+mgrToken}});
+    const d = await r.json();
+    if(!d.success) throw new Error(d.error);
+    const reviews = d.reviews||[];
+    if(!reviews.length){ el.innerHTML='<div class="ql-empty">No reviews yet</div>'; return; }
+
+    el.innerHTML = reviews.map(rv=>{
+      const place = PLACES_LIST.find(p=>`place_${p.id}`===rv.place_key);
+      const stars = '★'.repeat(rv.stars)+'☆'.repeat(5-rv.stars);
+      const date  = new Date(rv.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+      return `<div style="background:#fff;border-radius:12px;border:1px solid #e0e0e0;padding:0.85rem;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+          <span style="font-size:13px;font-weight:600;color:#085041">${place?.name||rv.place_key}</span>
+          <span style="font-size:12px;color:#BA7517">${stars}</span>
+          ${rv.is_seeded?'<span style="font-size:10px;background:#E1F5EE;color:#085041;padding:2px 7px;border-radius:8px;font-weight:600">Seeded</span>':'<span style="font-size:10px;background:#FFF3CD;color:#856404;padding:2px 7px;border-radius:8px">Visitor</span>'}
+          <span style="margin-left:auto;font-size:11px;color:#aaa">${date}</span>
+          <button onclick="deleteReview('${rv.id}')" style="padding:3px 10px;background:#FEE2E2;color:#A32D2D;border:none;border-radius:7px;font-size:11px;cursor:pointer;font-weight:600">Delete</button>
+        </div>
+        <div style="font-size:13px;font-weight:500;color:#1a1a1a">${rv.visitor_name}${rv.nationality?` · ${rv.nationality}`:''}</div>
+        ${rv.comment?`<div style="font-size:12px;color:#555;margin-top:4px">${rv.comment}</div>`:''}
+        ${rv.comment_ar?`<div style="font-size:12px;color:#555;margin-top:3px;direction:rtl;text-align:right">${rv.comment_ar}</div>`:''}
+      </div>`;
+    }).join('');
+  } catch(e){
+    el.innerHTML=`<div class="ql-empty">Error: ${e.message}</div>`;
+  }
+}
+
+async function deleteReview(id){
+  if(!confirm('Delete this review?')) return;
+  try{
+    const r = await fetch(`${BACKEND}/manager/reviews/${id}`,{
+      method:'DELETE', headers:{Authorization:'Bearer '+mgrToken}
+    });
+    const d = await r.json();
+    if(!d.success) throw new Error(d.error);
+    loadAllReviews();
+  } catch(e){ alert('Error: '+e.message); }
 }
 
 // ── LOAD DASHBOARD ────────────────────────────────────────────────────────────
