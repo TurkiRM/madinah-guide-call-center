@@ -2,7 +2,8 @@
   "name": "Madinah Guide — Call Center",
   "short_name": "MG Agents",
   "description": "Madinah Guide agent and manager call center portal",
-  "start_url": "/madinah-guide-callcenter/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#085041",
   "theme_color": "#085041",
@@ -12,25 +13,25 @@
       "src": "icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ],
-  "shortcuts": [
-    {
-      "name": "Agent Login",
-      "url": "/madinah-guide-callcenter/agent-login.html",
-      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+      "purpose": "any"
     },
     {
-      "name": "Manager Dashboard",
-      "url": "/madinah-guide-callcenter/manager.html",
-      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
