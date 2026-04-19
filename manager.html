@@ -180,6 +180,7 @@
     <div class="tab" id="tab-agents"   onclick="showTab('agents',this)">👥 Agents</div>
     <div class="tab" id="tab-logs"      onclick="showTab('logs',this)">📋 Call logs</div>
     <div class="tab" id="tab-reviews"   onclick="showTab('reviews',this)">⭐ Reviews</div>
+    <div class="tab" id="tab-events"    onclick="showTab('events',this)">📅 Events</div>
     <div class="tab" id="tab-businesses" onclick="showTab('businesses',this)">🏪 Businesses</div>
   </div>
 
@@ -273,6 +274,46 @@
         </select>
       </div>
       <div id="allReviewsList"><div class="ql-empty">Loading…</div></div>
+    </div>
+
+    <!-- EVENTS -->
+    <div class="scr" id="scr-events">
+      <div class="section-title">Add New Event</div>
+      <div style="background:#fff;border-radius:14px;border:1px solid #e0e0e0;padding:1rem;margin-bottom:1rem;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <input id="evTitleEn" placeholder="Title in English *" style="flex:1;min-width:200px;padding:9px 12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;outline:none;font-family:inherit"/>
+          <select id="evCat" style="width:130px;padding:9px 12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;outline:none">
+            <option value="sport">🏃 Sport</option>
+            <option value="culture">🎭 Culture</option>
+            <option value="forum">🎤 Forum</option>
+            <option value="heritage">🏛️ Heritage</option>
+            <option value="food">🍽️ Food</option>
+            <option value="other">✨ Other</option>
+          </select>
+        </div>
+        <input id="evTitleAr" placeholder="العنوان بالعربية" dir="rtl" style="padding:9px 12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;outline:none;font-family:inherit;text-align:right"/>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <div style="flex:1;min-width:140px"><label style="font-size:11px;color:#888;margin-bottom:3px;display:block">Start date *</label><input id="evStart" type="date" style="width:100%;padding:9px 12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;outline:none"/></div>
+          <div style="flex:1;min-width:140px"><label style="font-size:11px;color:#888;margin-bottom:3px;display:block">End date (optional)</label><input id="evEnd" type="date" style="width:100%;padding:9px 12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;outline:none"/></div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <input id="evLocEn" placeholder="Location in English" style="flex:1;padding:9px 12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;outline:none;font-family:inherit"/>
+          <input id="evLocAr" placeholder="الموقع بالعربية" dir="rtl" style="flex:1;padding:9px 12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;outline:none;font-family:inherit;text-align:right"/>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <input id="evCost" placeholder="Cost (leave empty = Free)" style="flex:1;padding:9px 12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;outline:none;font-family:inherit"/>
+          <input id="evRegUrl" placeholder="Register URL (optional)" style="flex:1;padding:9px 12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;outline:none;font-family:inherit"/>
+        </div>
+        <textarea id="evDescEn" placeholder="Description in English" rows="2" style="padding:9px 12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;resize:none;outline:none;font-family:inherit"></textarea>
+        <textarea id="evDescAr" placeholder="الوصف بالعربية" dir="rtl" rows="2" style="padding:9px 12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;resize:none;outline:none;font-family:inherit;text-align:right"></textarea>
+        <input id="evImg" placeholder="Image URL (optional)" style="padding:9px 12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;outline:none;font-family:inherit"/>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button onclick="addEvent()" style="padding:10px 20px;background:#085041;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">✅ Add event</button>
+          <span id="evMsg" style="font-size:13px"></span>
+        </div>
+      </div>
+      <div class="section-title">All Events <button class="refresh-btn" onclick="loadMgrEvents()">↻ Refresh</button></div>
+      <div id="mgrEventsList"><div class="ql-empty">Loading…</div></div>
     </div>
 
     <!-- BUSINESSES -->
@@ -459,6 +500,95 @@ function showTab(name,el){
   if(name==='logs')       loadLogs();
   if(name==='businesses') loadBusinesses();
   if(name==='reviews')    initReviewsTab();
+  if(name==='events')     loadMgrEvents();
+}
+
+// ── EVENTS ────────────────────────────────────────────────────────────────────
+async function addEvent(){
+  const titleEn = document.getElementById('evTitleEn').value.trim();
+  const titleAr = document.getElementById('evTitleAr').value.trim();
+  const cat     = document.getElementById('evCat').value;
+  const start   = document.getElementById('evStart').value;
+  const end     = document.getElementById('evEnd').value;
+  const locEn   = document.getElementById('evLocEn').value.trim();
+  const locAr   = document.getElementById('evLocAr').value.trim();
+  const cost    = document.getElementById('evCost').value.trim();
+  const regUrl  = document.getElementById('evRegUrl').value.trim();
+  const descEn  = document.getElementById('evDescEn').value.trim();
+  const descAr  = document.getElementById('evDescAr').value.trim();
+  const img     = document.getElementById('evImg').value.trim();
+  const msg     = document.getElementById('evMsg');
+
+  if(!titleEn || !start || !cat){
+    msg.style.color='#A32D2D'; msg.textContent='Title, start date and category are required'; return;
+  }
+  msg.style.color='#888'; msg.textContent='Saving…';
+  try{
+    const r = await fetch(`${BACKEND}/manager/events`,{
+      method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+mgrToken},
+      body: JSON.stringify({
+        title_en:titleEn, title_ar:titleAr||null, category:cat,
+        start_date:start, end_date:end||null,
+        location_en:locEn||null, location_ar:locAr||null,
+        cost:cost||null, register_url:regUrl||null,
+        desc_en:descEn||null, desc_ar:descAr||null, img:img||null,
+      })
+    });
+    const d = await r.json();
+    if(!d.success) throw new Error(d.error);
+    msg.style.color='#0F6E56'; msg.textContent='✅ Event added!';
+    ['evTitleEn','evTitleAr','evLocEn','evLocAr','evCost','evRegUrl','evDescEn','evDescAr','evImg','evStart','evEnd'].forEach(id=>{
+      document.getElementById(id).value='';
+    });
+    setTimeout(loadMgrEvents, 500);
+  }catch(e){ msg.style.color='#A32D2D'; msg.textContent='Error: '+e.message; }
+}
+
+async function loadMgrEvents(){
+  const el=document.getElementById('mgrEventsList');
+  el.innerHTML='<div class="ql-empty">Loading…</div>';
+  try{
+    const r=await fetch(`${BACKEND}/manager/events`,{headers:{Authorization:'Bearer '+mgrToken}});
+    const d=await r.json();
+    if(!d.success) throw new Error(d.error);
+    const events=d.events||[];
+    if(!events.length){ el.innerHTML='<div class="ql-empty">No events yet</div>'; return; }
+    const catIcons={sport:'🏃',culture:'🎭',forum:'🎤',heritage:'🏛️',food:'🍽️',other:'✨'};
+    el.innerHTML=events.map(ev=>{
+      const date=new Date(ev.start_date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+      const endDate=ev.end_date?' → '+new Date(ev.end_date).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';
+      const isPast=new Date(ev.end_date||ev.start_date)<new Date();
+      return `<div style="background:#fff;border-radius:12px;border:1px solid #e0e0e0;padding:0.85rem;margin-bottom:8px;opacity:${isPast?0.6:1}">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+          <span style="font-size:16px">${catIcons[ev.category]||'✨'}</span>
+          <span style="font-size:13px;font-weight:600;color:#1a1a1a;flex:1">${ev.title_en}</span>
+          ${isPast?'<span style="font-size:10px;background:#f0f0f0;color:#999;padding:2px 8px;border-radius:8px">Ended</span>':'<span style="font-size:10px;background:#E1F5EE;color:#085041;padding:2px 8px;border-radius:8px;font-weight:600">Active</span>'}
+          <button onclick="toggleEvent('${ev.id}',${!ev.is_active})" style="padding:3px 10px;background:${ev.is_active?'#FEE2E2':'#E1F5EE'};color:${ev.is_active?'#A32D2D':'#085041'};border:none;border-radius:7px;font-size:11px;cursor:pointer;font-weight:600">${ev.is_active?'Hide':'Show'}</button>
+          <button onclick="deleteEvent('${ev.id}')" style="padding:3px 10px;background:#FEE2E2;color:#A32D2D;border:none;border-radius:7px;font-size:11px;cursor:pointer;font-weight:600">Delete</button>
+        </div>
+        <div style="font-size:12px;color:#888">📅 ${date}${endDate} · ${ev.category}${ev.location_en?' · 📍 '+ev.location_en:''} ${ev.cost?' · 💰 '+ev.cost:' · Free'}</div>
+        ${ev.title_ar?`<div style="font-size:12px;color:#aaa;direction:rtl;text-align:right;margin-top:2px">${ev.title_ar}</div>`:''}
+      </div>`;
+    }).join('');
+  }catch(e){ el.innerHTML=`<div class="ql-empty">Error: ${e.message}</div>`; }
+}
+
+async function toggleEvent(id, isActive){
+  try{
+    await fetch(`${BACKEND}/manager/events/${id}`,{
+      method:'PATCH', headers:{'Content-Type':'application/json','Authorization':'Bearer '+mgrToken},
+      body:JSON.stringify({is_active:isActive})
+    });
+    loadMgrEvents();
+  }catch(e){ alert('Error: '+e.message); }
+}
+
+async function deleteEvent(id){
+  if(!confirm('Delete this event permanently?')) return;
+  try{
+    await fetch(`${BACKEND}/manager/events/${id}`,{method:'DELETE',headers:{Authorization:'Bearer '+mgrToken}});
+    loadMgrEvents();
+  }catch(e){ alert('Error: '+e.message); }
 }
 
 // ── PLACE REVIEWS TAB ─────────────────────────────────────────────────────────
