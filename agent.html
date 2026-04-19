@@ -2,7 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="MG Agents"/>
+  <meta name="theme-color" content="#085041"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="apple-touch-icon" href="icon-192.png"/>
   <title>Madinah Guide — Agent Dashboard</title>
   <script src="https://unpkg.com/@daily-co/daily-js"></script>
   <style>
@@ -275,6 +281,49 @@ function showMain(){
   prewarmMic();
   loadDash();
   dashInterval=setInterval(loadDash,5000);
+
+  // ── Background keep-alive ─────────────────────────────────────────────────
+  // Register service worker so app stays alive when minimized
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js').then(reg=>{
+      mlog('Background mode enabled ✓ — you can minimize the app','ok');
+    }).catch(()=>{});
+  }
+
+  // Request wake lock to prevent screen/CPU sleep on mobile
+  async function requestWakeLock(){
+    if('wakeLock' in navigator){
+      try{
+        const lock = await navigator.wakeLock.request('screen');
+        mlog('Screen wake lock active — app will not sleep','ok');
+        // re-acquire on visibility change
+        document.addEventListener('visibilitychange', async ()=>{
+          if(document.visibilityState==='visible'){
+            try{ await navigator.wakeLock.request('screen'); }catch(e){}
+          }
+        });
+      }catch(e){ mlog('Wake lock not available — keep screen on manually','inf'); }
+    }
+  }
+  requestWakeLock();
+
+  // Keep SW alive by pinging it every 25s (SW dies after 30s of inactivity)
+  setInterval(()=>{
+    if(navigator.serviceWorker.controller){
+      navigator.serviceWorker.controller.postMessage({type:'KEEP_ALIVE'});
+    }
+  }, 25000);
+
+  // When tab becomes visible again — immediately refresh queue
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState==='visible'){
+      mlog('App resumed — refreshing queue…','inf');
+      loadDash();
+    }
+  });
+
+  // Play ringtone even in background using AudioContext
+  // AudioContext survives tab minimization unlike setInterval alone
 }
 
 async function prewarmMic(){
