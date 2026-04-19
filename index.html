@@ -51,10 +51,27 @@
   <div class="footer">Madinah Guide Call Center · Staff only · للموظفين فقط</div>
 </div>
 
+
 <script>
-  if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+  let installPrompt = null;
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault(); installPrompt = e;
+    document.getElementById('installBanner').style.display = 'flex';
+  });
+  async function installApp(){
+    if(!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if(outcome === 'accepted') { installPrompt = null; document.getElementById('installBanner').style.display='none'; }
   }
 </script>
+<div id="installBanner" style="display:none;position:fixed;bottom:1rem;left:1rem;right:1rem;background:#085041;border-radius:14px;padding:0.85rem 1rem;align-items:center;gap:10px;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,0.3)">
+  <span style="font-size:20px">📲</span>
+  <div style="flex:1;font-size:13px;color:#fff;line-height:1.4"><strong>Install Madinah Guide</strong><br><span style="color:#9FE1CB;font-size:11px">Add to home screen for background mode</span></div>
+  <button onclick="installApp()" style="background:#1D9E75;color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer">Install</button>
+  <button onclick="document.getElementById('installBanner').style.display='none'" style="background:none;border:none;color:#9FE1CB;font-size:18px;cursor:pointer;padding:0 4px">✕</button>
+</div>
 </body>
 </html>
