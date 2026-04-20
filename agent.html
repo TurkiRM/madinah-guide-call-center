@@ -284,30 +284,44 @@ function showMain(){
   // Subscribe to push notifications so agent gets alerted even in background
   subscribeToPush(agentId);
 
-  // Wake lock — keeps screen on so background polling works on mobile
-  async function requestWakeLock(){
-    if('wakeLock' in navigator){
-      try{
-        await navigator.wakeLock.request('screen');
-        mlog('Screen wake lock active — app will not sleep ✓','ok');
-        document.addEventListener('visibilitychange', async ()=>{
-          if(document.visibilityState==='visible'){
-            try{ await navigator.wakeLock.request('screen'); }catch(e){}
-          }
-        });
-      }catch(e){ mlog('Wake lock not available on this device','inf'); }
-    }
+  // Tell SW to start background queue polling
+  if(navigator.serviceWorker?.controller){
+    navigator.serviceWorker.controller.postMessage({ type:'START_POLLING', agentId });
+    mlog('Background polling started — you can minimize the app ✓','ok');
   }
-  requestWakeLock();
 
-  // Keep SW alive — ping every 25s (SW dies after 30s idle)
-  setInterval(()=>{
-    if(navigator.serviceWorker?.controller){
-      navigator.serviceWorker.controller.postMessage({type:'KEEP_ALIVE'});
+  // Listen for queue updates from SW (works even in background)
+  navigator.serviceWorker.addEventListener('message', e => {
+    if(e.data?.type === 'QUEUE_UPDATE') {
+      // SW sent fresh data — update UI silently without fetch
+      document.getElementById('s-q').textContent = e.data.queue.length;
+      renderQueue(e.data.queue);
+      renderAgents(e.data.agents || []);
+      setB('ok');
     }
+    if(e.data?.type === 'POLLING_STARTED') {
+      mlog('SW background polling active ✓','ok');
+    }
+  });
+
+  // Wake lock — keeps screen on so audio/vibration works
+  if('wakeLock' in navigator){
+    navigator.wakeLock.request('screen').then(()=>{
+      mlog('Screen wake lock active ✓','ok');
+      document.addEventListener('visibilitychange', ()=>{
+        if(document.visibilityState==='visible'){
+          navigator.wakeLock.request('screen').catch(()=>{});
+        }
+      });
+    }).catch(()=> mlog('Wake lock not available on this device','inf'));
+  }
+
+  // Keep SW alive every 25s
+  setInterval(()=>{
+    navigator.serviceWorker?.controller?.postMessage({type:'KEEP_ALIVE'});
   }, 25000);
 
-  // Immediately refresh queue when agent returns to app
+  // When app comes back to foreground — do a fresh fetch immediately
   document.addEventListener('visibilitychange', ()=>{
     if(document.visibilityState==='visible') loadDash();
   });
@@ -330,7 +344,7 @@ async function prewarmMic(){
 
 async function loadDash(){
   try{
-    const r=await fetch(BACKEND+'/agent/'+agentId+'/dashboard');
+    const r=await fetch(BACKEND+'/agent/'+agentId+'/dashboard', { cache:'no-store' });
     const d=await r.json();
     document.getElementById('s-q').textContent=d.queue.length;
     document.getElementById('s-a').textContent=d.allAgents.filter(a=>a.status!=='offline').length;
@@ -339,7 +353,13 @@ async function loadDash(){
     renderQueue(d.queue);
     renderAgents(d.allAgents);
     setB('ok');
-  }catch(e){setB('err');mlog('Refresh failed — '+e.message,'err');}
+  }catch(e){
+    // Only show error if app is in foreground — background fetch failures are expected
+    if(document.visibilityState==='visible'){
+      setB('err');
+      mlog('Refresh failed — '+e.message,'err');
+    }
+  }
 }
 
 let lastQueueLen=0;
@@ -627,7 +647,6 @@ if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js')
     .then(reg => {
       console.log('SW registered ✓', reg.scope);
-      // Listen for SW messages
       navigator.serviceWorker.addEventListener('message', e => {
         if(e.data?.type === 'SW_ALIVE') {
           if(typeof loadDash === 'function') loadDash();
