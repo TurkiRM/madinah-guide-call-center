@@ -73,17 +73,23 @@ self.addEventListener('message', e => {
 
 // ── Push notifications (future use) ──────────────────────────────────────────
 self.addEventListener('push', e => {
-  if (!e.data) return;
-  const data = e.data.json();
+  let data = { title: '📞 New visitor in queue', body: 'A visitor is waiting for you', tag: 'incoming-call' };
+  try { if(e.data) data = { ...data, ...e.data.json() }; } catch(err){}
+
   e.waitUntil(
-    self.registration.showNotification(data.title || 'Madinah Guide', {
-      body:  data.body  || 'New visitor in queue',
-      icon:  'icon-192.png',
-      badge: 'icon-192.png',
-      tag:   'incoming-call',
-      renotify: true,
-      requireInteraction: true, // stays on screen until agent acts
-      vibrate: [200, 100, 200],
+    self.registration.showNotification(data.title, {
+      body:             data.body,
+      icon:             'icon-192.png',
+      badge:            'icon-192.png',
+      tag:              data.tag || 'incoming-call',
+      renotify:         true,
+      requireInteraction: true,
+      vibrate:          [300, 100, 300, 100, 300],
+      data:             { url: data.url || './agent.html' },
+      actions: [
+        { action: 'answer', title: '📞 Answer' },
+        { action: 'dismiss', title: 'Dismiss' },
+      ],
     })
   );
 });
