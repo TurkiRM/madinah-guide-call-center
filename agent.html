@@ -281,6 +281,9 @@ function showMain(){
   loadDash();
   dashInterval=setInterval(loadDash,5000);
 
+  // Subscribe to push notifications so agent gets alerted even in background
+  subscribeToPush(agentId);
+
   // Wake lock — keeps screen on so background polling works on mobile
   async function requestWakeLock(){
     if('wakeLock' in navigator){
@@ -627,12 +630,55 @@ if('serviceWorker' in navigator){
       // Listen for SW messages
       navigator.serviceWorker.addEventListener('message', e => {
         if(e.data?.type === 'SW_ALIVE') {
-          // SW confirmed alive — trigger queue refresh
           if(typeof loadDash === 'function') loadDash();
         }
       });
     })
     .catch(err => console.warn('SW registration failed:', err));
+}
+
+// ── Push notification subscription ────────────────────────────────────────────
+async function subscribeToPush(agentId){
+  try{
+    if(!('serviceWorker' in navigator) || !('PushManager' in window)){
+      console.warn('Push not supported on this browser');
+      return;
+    }
+    const reg = await navigator.serviceWorker.ready;
+
+    // Get VAPID public key from backend
+    const keyRes  = await fetch(`${BACKEND}/push/vapid-key`);
+    const keyData = await keyRes.json();
+    if(!keyData.publicKey){ console.warn('No VAPID key from backend'); return; }
+
+    // Convert base64url public key to Uint8Array
+    const vapidKey = Uint8Array.from(
+      atob(keyData.publicKey.replace(/-/g,'+').replace(/_/g,'/')),
+      c => c.charCodeAt(0)
+    );
+
+    // Request push permission and subscribe
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly:      true,
+      applicationServerKey: vapidKey,
+    });
+
+    // Send subscription to backend
+    await fetch(`${BACKEND}/push/subscribe`, {
+      method:  'POST',
+      headers: {'Content-Type':'application/json'},
+      body:    JSON.stringify({ agentId, subscription: sub.toJSON() }),
+    });
+    console.log('Push subscription registered ✓');
+    mlog('Push notifications enabled — you will be notified even in background ✓','ok');
+
+  }catch(e){
+    if(e.name === 'NotAllowedError'){
+      mlog('Push notifications blocked — allow notifications in browser settings for background alerts','inf');
+    } else {
+      console.warn('Push subscription failed:', e.message);
+    }
+  }
 }
 
 // ── PWA Install prompt ─────────────────────────────────────────────────────────
