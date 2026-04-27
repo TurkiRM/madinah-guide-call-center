@@ -187,6 +187,7 @@
     <div class="tab" id="tab-logs"      onclick="showTab('logs',this)">📋 Call logs</div>
     <div class="tab" id="tab-reviews"   onclick="showTab('reviews',this)">⭐ Reviews</div>
     <div class="tab" id="tab-events"    onclick="showTab('events',this)">📅 Events</div>
+    <div class="tab" id="tab-offers"    onclick="showTab('offers',this)">🎁 Offers</div>
     <div class="tab" id="tab-businesses" onclick="showTab('businesses',this)">🏪 Businesses</div>
   </div>
 
@@ -320,6 +321,41 @@
       </div>
       <div class="section-title">All Events <button class="refresh-btn" onclick="loadMgrEvents()">↻ Refresh</button></div>
       <div id="mgrEventsList"><div class="ql-empty">Loading…</div></div>
+    </div>
+
+    <!-- OFFERS -->
+    <div class="scr" id="scr-offers">
+      <div class="section-title">Add New Offer</div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:1rem">
+        <select id="ofPlaceId" style="padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px">
+          <option value="">— Select place —</option>
+        </select>
+        <input id="ofTitleEn"  placeholder="Title (English)" style="padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px"/>
+        <input id="ofTitleAr"  placeholder="العنوان (عربي)" dir="rtl" style="padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px"/>
+        <input id="ofDiscount" placeholder="Discount label e.g. 20% OFF, Free coffee" style="padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px"/>
+        <textarea id="ofDescEn"  placeholder="Description (English — optional)" rows="2" style="padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px;resize:none"></textarea>
+        <textarea id="ofDescAr"  placeholder="الوصف (عربي — اختياري)" dir="rtl" rows="2" style="padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px;resize:none"></textarea>
+        <input id="ofImg"      placeholder="Image URL (optional)" style="padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px"/>
+        <div style="display:flex;gap:8px">
+          <div style="flex:1">
+            <label style="font-size:12px;color:#888">Valid from</label>
+            <input id="ofFrom" type="date" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px"/>
+          </div>
+          <div style="flex:1">
+            <label style="font-size:12px;color:#888">Valid until</label>
+            <input id="ofUntil" type="date" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px"/>
+          </div>
+        </div>
+        <button onclick="addOffer()" style="padding:10px;background:#085041;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">🎁 Add Offer</button>
+        <div id="ofMsg" style="font-size:13px;text-align:center"></div>
+      </div>
+
+      <div class="section-title">
+        Active Offers
+        <button class="refresh-btn" onclick="loadMgrOffers()">↻ Refresh</button>
+      </div>
+      <div id="offersList"><div class="ql-empty">Loading…</div></div>
     </div>
 
     <!-- BUSINESSES -->
@@ -506,7 +542,7 @@ function showTab(name,el){
   if(name==='logs')       loadLogs();
   if(name==='businesses') loadBusinesses();
   if(name==='reviews')    initReviewsTab();
-  if(name==='events')     loadMgrEvents();
+  if(name==='offers')     loadMgrOffers();
 }
 
 // ── EVENTS ────────────────────────────────────────────────────────────────────
@@ -1010,6 +1046,135 @@ async function toggleBizActive(id, is_active) {
 
 checkHealth();
 checkSession();
+
+// ── OFFERS ────────────────────────────────────────────────────────────────────
+function initOffersPlacePicker(){
+  const sel = document.getElementById('ofPlaceId');
+  if(!sel || sel.options.length > 1) return;
+  PLACES_LIST.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = p.name;
+    sel.appendChild(opt);
+  });
+  // Default dates
+  const today = new Date().toISOString().split('T')[0];
+  const nextWeek = new Date(Date.now() + 7*24*3600*1000).toISOString().split('T')[0];
+  document.getElementById('ofFrom').value  = today;
+  document.getElementById('ofUntil').value = nextWeek;
+}
+
+async function addOffer(){
+  const placeId  = document.getElementById('ofPlaceId').value;
+  const titleEn  = document.getElementById('ofTitleEn').value.trim();
+  const titleAr  = document.getElementById('ofTitleAr').value.trim();
+  const discount = document.getElementById('ofDiscount').value.trim();
+  const descEn   = document.getElementById('ofDescEn').value.trim();
+  const descAr   = document.getElementById('ofDescAr').value.trim();
+  const img      = document.getElementById('ofImg').value.trim();
+  const from     = document.getElementById('ofFrom').value;
+  const until    = document.getElementById('ofUntil').value;
+  const msg      = document.getElementById('ofMsg');
+
+  if(!placeId || !titleEn || !titleAr || !until){
+    msg.style.color='#A32D2D'; msg.textContent='Place, title (both languages) and valid until date are required.'; return;
+  }
+
+  const place = PLACES_LIST.find(p => p.id == placeId);
+  msg.style.color='#888'; msg.textContent='Saving…';
+
+  try{
+    const r = await fetch(BACKEND+'/manager/offers', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body: JSON.stringify({
+        place_id: parseInt(placeId),
+        place_name_en: place?.name || '',
+        place_name_ar: place?.name || '',
+        title_en: titleEn, title_ar: titleAr,
+        desc_en: descEn||null, desc_ar: descAr||null,
+        discount: discount||null, img: img||null,
+        valid_from: from, valid_until: until,
+      })
+    });
+    const d = await r.json();
+    if(!d.success) throw new Error(d.error);
+    msg.style.color='#085041'; msg.textContent='✅ Offer added!';
+    ['ofTitleEn','ofTitleAr','ofDiscount','ofDescEn','ofDescAr','ofImg'].forEach(id => {
+      const el = document.getElementById(id); if(el) el.value='';
+    });
+    document.getElementById('ofPlaceId').value = '';
+    loadMgrOffers();
+  }catch(e){
+    msg.style.color='#A32D2D'; msg.textContent='Error: '+e.message;
+  }
+}
+
+async function loadMgrOffers(){
+  initOffersPlacePicker();
+  const list = document.getElementById('offersList');
+  list.innerHTML = '<div class="ql-empty">Loading…</div>';
+  try{
+    const r = await fetch(BACKEND+'/manager/offers', {headers:{'Authorization':'Bearer '+token}});
+    const d = await r.json();
+    if(!d.success) throw new Error(d.error);
+    const offers = d.offers || [];
+    if(!offers.length){ list.innerHTML='<div class="ql-empty">No offers yet</div>'; return; }
+    list.innerHTML = '';
+    offers.forEach(o => {
+      const expired = new Date(o.valid_until) < new Date();
+      const card = document.createElement('div');
+      card.style.cssText = 'background:#fff;border:1px solid #eee;border-radius:12px;padding:1rem;margin-bottom:0.75rem;opacity:'+((!o.is_active||expired)?'0.5':'1');
+      card.innerHTML = `
+        <div style="display:flex;align-items:flex-start;gap:10px">
+          ${o.img ? `<img src="${o.img}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;flex-shrink:0"/>` : '<div style="width:60px;height:60px;background:#E1F5EE;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">🎁</div>'}
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;color:#085041">${o.place_name_en}</div>
+            <div style="font-size:14px;font-weight:700;color:#1a1a1a">${o.title_en}</div>
+            <div style="font-size:13px;color:#888;direction:rtl;text-align:right">${o.title_ar}</div>
+            ${o.discount ? `<div style="display:inline-block;background:#FFF3CD;color:#856404;font-size:12px;font-weight:700;padding:2px 8px;border-radius:8px;margin-top:4px">${o.discount}</div>` : ''}
+            <div style="font-size:11px;color:#aaa;margin-top:4px">
+              ${o.valid_from} → ${o.valid_until}
+              ${expired ? '<span style="color:#A32D2D;font-weight:600"> · EXPIRED</span>' : ''}
+              ${!o.is_active ? '<span style="color:#888;font-weight:600"> · INACTIVE</span>' : ''}
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:10px">
+          <button onclick="toggleOffer(${o.id},${!o.is_active})" style="flex:1;padding:7px;background:${o.is_active?'#f5f5f0':'#E1F5EE'};color:${o.is_active?'#555':'#085041'};border:1px solid #ddd;border-radius:8px;font-size:12px;cursor:pointer">
+            ${o.is_active ? '⏸ Deactivate' : '▶ Activate'}
+          </button>
+          <button onclick="deleteOffer(${o.id})" style="padding:7px 12px;background:#FDE8E8;color:#A32D2D;border:1px solid #f5c6c6;border-radius:8px;font-size:12px;cursor:pointer">🗑 Delete</button>
+        </div>`;
+      list.appendChild(card);
+    });
+  }catch(e){
+    list.innerHTML = '<div class="ql-empty" style="color:#A32D2D">Error: '+e.message+'</div>';
+  }
+}
+
+async function toggleOffer(id, newActive){
+  try{
+    await fetch(BACKEND+'/manager/offers/'+id, {
+      method:'PATCH',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body: JSON.stringify({is_active: newActive})
+    });
+    loadMgrOffers();
+  }catch(e){ alert('Error: '+e.message); }
+}
+
+async function deleteOffer(id){
+  if(!confirm('Delete this offer?')) return;
+  try{
+    await fetch(BACKEND+'/manager/offers/'+id, {
+      method:'DELETE',
+      headers:{'Authorization':'Bearer '+token}
+    });
+    loadMgrOffers();
+  }catch(e){ alert('Error: '+e.message); }
+}
+
 </script>
 </body>
 </html>
