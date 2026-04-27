@@ -1086,7 +1086,7 @@ async function addOffer(){
   try{
     const r = await fetch(BACKEND+'/manager/offers', {
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+mgrToken},
       body: JSON.stringify({
         place_id: parseInt(placeId),
         place_name_en: place?.name || '',
@@ -1115,7 +1115,7 @@ async function loadMgrOffers(){
   const list = document.getElementById('offersList');
   list.innerHTML = '<div class="ql-empty">Loading…</div>';
   try{
-    const r = await fetch(BACKEND+'/manager/offers', {headers:{'Authorization':'Bearer '+token}});
+    const r = await fetch(BACKEND+'/manager/offers', {headers:{'Authorization':'Bearer '+mgrToken}});
     const d = await r.json();
     if(!d.success) throw new Error(d.error);
     const offers = d.offers || [];
@@ -1157,7 +1157,7 @@ async function toggleOffer(id, newActive){
   try{
     await fetch(BACKEND+'/manager/offers/'+id, {
       method:'PATCH',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+mgrToken},
       body: JSON.stringify({is_active: newActive})
     });
     loadMgrOffers();
@@ -1169,7 +1169,7 @@ async function deleteOffer(id){
   try{
     await fetch(BACKEND+'/manager/offers/'+id, {
       method:'DELETE',
-      headers:{'Authorization':'Bearer '+token}
+      headers:{'Authorization':'Bearer '+mgrToken}
     });
     loadMgrOffers();
   }catch(e){ alert('Error: '+e.message); }
