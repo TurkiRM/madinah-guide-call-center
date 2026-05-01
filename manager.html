@@ -533,8 +533,8 @@ async function doMgrLogin() {
       sessionStorage.setItem('mgr_token', d.token);
       sessionStorage.setItem('mgr_name',  d.name);
       showDash(d.name);
-    } else { showLoginErr(d.error||'Invalid credentials.'); }
-  } catch(e){ showLoginErr('Cannot connect to server.'); }
+    } else { showLoginErr(d.error || d.detail || 'Invalid credentials — check phone and password.'); }
+  } catch(e){ showLoginErr('Cannot connect to server. Error: ' + e.message); }
 
   document.getElementById('mgrLoginBtn').disabled=false;
   document.getElementById('mgrSpin').style.display='none';
