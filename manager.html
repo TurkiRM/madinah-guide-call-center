@@ -453,17 +453,35 @@ let selectedLangs = ['ar','en'];
 
 // ── HEALTH ───────────────────────────────────────────────────────────────────
 async function checkHealth() {
-  try {
-    const r = await fetch(BACKEND+'/');
-    const d = await r.json();
-    if(d.status==='ok'){
-      document.getElementById('bDot').className='bdot bdot-g';
-      document.getElementById('bLbl').textContent='Backend connected ✓';
+  const dot = document.getElementById('bDot');
+  const lbl = document.getElementById('bLbl');
+  dot.className = 'bdot bdot-y';
+  lbl.textContent = 'Connecting…';
+
+  // Render free tier can take up to 50s to wake up — keep pinging
+  for(let attempt = 1; attempt <= 6; attempt++){
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+      const r = await fetch(BACKEND+'/', { signal: controller.signal });
+      clearTimeout(timeout);
+      const d = await r.json();
+      if(d.status === 'ok'){
+        dot.className = 'bdot bdot-g';
+        lbl.textContent = 'Backend connected ✓';
+        return true;
+      }
+    } catch(e) {
+      if(attempt < 6){
+        dot.className = 'bdot bdot-y';
+        lbl.textContent = `Waking up server… (${attempt * 10}s)`;
+        await new Promise(res => setTimeout(res, 10000));
+      }
     }
-  } catch(e) {
-    document.getElementById('bDot').className='bdot bdot-r';
-    document.getElementById('bLbl').textContent='Backend offline — try again';
   }
+  dot.className = 'bdot bdot-r';
+  lbl.textContent = 'Backend offline — try again';
+  return false;
 }
 
 // ── SESSION ───────────────────────────────────────────────────────────────────
@@ -486,10 +504,29 @@ async function doMgrLogin() {
   document.getElementById('mgrLoginLbl').textContent='Logging in…';
 
   try {
+    // Make sure backend is awake first
+    const lbl = document.getElementById('bLbl');
+    if(!lbl.textContent.includes('✓')){
+      document.getElementById('mgrLoginLbl').textContent = 'Waking up server…';
+      const alive = await checkHealth();
+      if(!alive){
+        showLoginErr('Cannot connect to server. Please wait a moment and try again.');
+        document.getElementById('mgrLoginBtn').disabled=false;
+        document.getElementById('mgrSpin').style.display='none';
+        document.getElementById('mgrLoginLbl').textContent='Login to dashboard';
+        return;
+      }
+    }
+    document.getElementById('mgrLoginLbl').textContent='Logging in…';
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
     const r = await fetch(BACKEND+'/auth/manager/login',{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({phone,password:pw})
+      body:JSON.stringify({phone,password:pw}),
+      signal: controller.signal
     });
+    clearTimeout(timeout);
     const d = await r.json();
     if(d.success && d.token){
       mgrToken = d.token;
