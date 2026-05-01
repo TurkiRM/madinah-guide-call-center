@@ -188,6 +188,7 @@
     <div class="tab" id="tab-reviews"   onclick="showTab('reviews',this)">⭐ Reviews</div>
     <div class="tab" id="tab-events"    onclick="showTab('events',this)">📅 Events</div>
     <div class="tab" id="tab-offers"    onclick="showTab('offers',this)">🎁 Offers</div>
+    <div class="tab" id="tab-flash"     onclick="showTab('flash',this)">⚡ Flash</div>
     <div class="tab" id="tab-businesses" onclick="showTab('businesses',this)">🏪 Businesses</div>
   </div>
 
@@ -356,6 +357,45 @@
         <button class="refresh-btn" onclick="loadMgrOffers()">↻ Refresh</button>
       </div>
       <div id="offersList"><div class="ql-empty">Loading…</div></div>
+    </div>
+
+    <!-- FLASH OFFERS -->
+    <div class="scr" id="scr-flash">
+      <div class="section-title">⚡ Create Flash Offer</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:1rem">
+        <select id="flPlaceId" style="padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px">
+          <option value="">— Select place —</option>
+        </select>
+        <input id="flTitleEn"  placeholder="Title (English) e.g. Coffee for 2 SAR" style="padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px"/>
+        <input id="flTitleAr"  placeholder="العنوان (عربي)" dir="rtl" style="padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px"/>
+        <div style="display:flex;gap:8px">
+          <div style="flex:1">
+            <label style="font-size:12px;color:#888">Original price (SAR)</label>
+            <input id="flOrigPrice" type="number" placeholder="e.g. 20" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px"/>
+          </div>
+          <div style="flex:1">
+            <label style="font-size:12px;color:#888">Offer price (SAR) *</label>
+            <input id="flOfferPrice" type="number" placeholder="e.g. 2" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px"/>
+          </div>
+          <div style="flex:1">
+            <label style="font-size:12px;color:#888">Total qty *</label>
+            <input id="flQty" type="number" placeholder="e.g. 100" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px"/>
+          </div>
+        </div>
+        <div>
+          <label style="font-size:12px;color:#888">Valid until (date & time) *</label>
+          <input id="flUntil" type="datetime-local" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px"/>
+        </div>
+        <input id="flImg" placeholder="Image URL (optional)" style="padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px"/>
+        <button onclick="createFlashOffer()" style="padding:10px;background:#085041;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">⚡ Create Flash Offer</button>
+        <div id="flMsg" style="font-size:13px;text-align:center"></div>
+      </div>
+
+      <div class="section-title">
+        Active Flash Offers
+        <button class="refresh-btn" onclick="loadFlashOffers()">↻ Refresh</button>
+      </div>
+      <div id="flashList"><div class="ql-empty">Loading…</div></div>
     </div>
 
     <!-- BUSINESSES -->
@@ -579,7 +619,7 @@ function showTab(name,el){
   if(name==='logs')       loadLogs();
   if(name==='businesses') loadBusinesses();
   if(name==='reviews')    initReviewsTab();
-  if(name==='offers')     loadMgrOffers();
+  if(name==='flash')      loadFlashOffers();
 }
 
 // ── EVENTS ────────────────────────────────────────────────────────────────────
@@ -1064,7 +1104,172 @@ async function toggleBizActive(id, is_active) {
 checkHealth();
 checkSession();
 
-// ── OFFERS ────────────────────────────────────────────────────────────────────
+// ── FLASH OFFERS ─────────────────────────────────────────────────────────────
+function initFlashPlacePicker(){
+  const sel = document.getElementById('flPlaceId');
+  if(!sel || sel.options.length > 1) return;
+  PLACES_LIST.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = p.name;
+    sel.appendChild(opt);
+  });
+  // Default valid until = tonight 10pm
+  const d = new Date();
+  d.setHours(22,0,0,0);
+  document.getElementById('flUntil').value = d.toISOString().slice(0,16);
+}
+
+async function createFlashOffer(){
+  const placeId    = document.getElementById('flPlaceId').value;
+  const titleEn    = document.getElementById('flTitleEn').value.trim();
+  const titleAr    = document.getElementById('flTitleAr').value.trim();
+  const origPrice  = document.getElementById('flOrigPrice').value;
+  const offerPrice = document.getElementById('flOfferPrice').value;
+  const qty        = document.getElementById('flQty').value;
+  const until      = document.getElementById('flUntil').value;
+  const img        = document.getElementById('flImg').value.trim();
+  const msg        = document.getElementById('flMsg');
+
+  if(!placeId||!titleEn||!titleAr||!offerPrice||!qty||!until){
+    msg.style.color='#A32D2D';
+    msg.textContent='Please fill all required fields.';
+    return;
+  }
+
+  const place = PLACES_LIST.find(p => p.id == placeId);
+  msg.style.color='#888'; msg.textContent='Creating…';
+
+  try{
+    const r = await fetch(BACKEND+'/manager/flash-offers',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+mgrToken},
+      body: JSON.stringify({
+        place_id: parseInt(placeId),
+        place_name_en: place?.name||'',
+        place_name_ar: place?.name||'',
+        title_en: titleEn, title_ar: titleAr,
+        original_price: origPrice ? parseFloat(origPrice) : null,
+        offer_price: parseFloat(offerPrice),
+        total_qty: parseInt(qty),
+        img: img||null,
+        valid_until: new Date(until).toISOString(),
+      })
+    });
+    const d = await r.json();
+    if(!d.success) throw new Error(d.error);
+
+    msg.style.color='#085041';
+    msg.textContent=`✅ Created! Cashier key: ${d.offer.cashier_key}`;
+    ['flTitleEn','flTitleAr','flOrigPrice','flOfferPrice','flQty','flImg'].forEach(id=>{
+      const el=document.getElementById(id); if(el) el.value='';
+    });
+    document.getElementById('flPlaceId').value='';
+    loadFlashOffers();
+  }catch(e){
+    msg.style.color='#A32D2D'; msg.textContent='Error: '+e.message;
+  }
+}
+
+async function loadFlashOffers(){
+  initFlashPlacePicker();
+  const list = document.getElementById('flashList');
+  list.innerHTML = '<div class="ql-empty">Loading…</div>';
+  try{
+    const r = await fetch(BACKEND+'/manager/flash-offers',{headers:{'Authorization':'Bearer '+mgrToken}});
+    const d = await r.json();
+    if(!d.success) throw new Error(d.error);
+    const offers = d.offers||[];
+    if(!offers.length){list.innerHTML='<div class="ql-empty">No flash offers yet</div>';return;}
+    list.innerHTML='';
+    offers.forEach(o=>{
+      const expired = new Date(o.valid_until) < new Date();
+      const soldOut = o.remaining_qty <= 0;
+      const pct     = o.total_qty > 0 ? Math.round((o.remaining_qty/o.total_qty)*100) : 0;
+      const barColor= pct>50?'#1D9E75':pct>20?'#F0A500':'#A32D2D';
+      const cashierUrl = `${window.location.origin}/cashier.html?key=${o.cashier_key}`;
+
+      const card = document.createElement('div');
+      card.style.cssText='background:#fff;border:1px solid #eee;border-radius:12px;padding:1rem;margin-bottom:0.75rem;opacity:'+((expired||soldOut||!o.is_active)?'0.55':'1');
+      card.innerHTML=`
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+          <div>
+            <div style="font-size:12px;color:#085041;font-weight:600">${o.place_name_en}</div>
+            <div style="font-size:14px;font-weight:700;color:#1a1a1a">${o.title_en}</div>
+            <div style="font-size:13px;color:#888;direction:rtl;text-align:right">${o.title_ar}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;margin-left:10px">
+            ${o.original_price?`<div style="font-size:12px;color:#aaa;text-decoration:line-through">${o.original_price} SAR</div>`:''}
+            <div style="font-size:20px;font-weight:800;color:#085041">${o.offer_price} SAR</div>
+          </div>
+        </div>
+        <!-- Progress bar -->
+        <div style="background:#f0f0f0;border-radius:6px;height:8px;margin-bottom:4px">
+          <div style="width:${pct}%;background:${barColor};height:100%;border-radius:6px;transition:width 0.3s"></div>
+        </div>
+        <div style="font-size:12px;color:#555;margin-bottom:8px">
+          <strong>${o.remaining_qty}</strong> of ${o.total_qty} remaining
+          ${expired?'<span style="color:#A32D2D;margin-left:8px">· EXPIRED</span>':''}
+          ${soldOut?'<span style="color:#A32D2D;margin-left:8px">· SOLD OUT</span>':''}
+          ${!o.is_active?'<span style="color:#888;margin-left:8px">· INACTIVE</span>':''}
+        </div>
+        <!-- Cashier key -->
+        <div style="background:#f5f5f0;border-radius:8px;padding:8px;margin-bottom:8px;font-size:12px">
+          🔑 Cashier key: <strong style="letter-spacing:2px">${o.cashier_key}</strong>
+          <a href="${cashierUrl}" target="_blank" style="margin-left:8px;color:#085041;font-weight:600;text-decoration:none">Open cashier page →</a>
+        </div>
+        <div style="font-size:11px;color:#aaa;margin-bottom:8px">Until ${new Date(o.valid_until).toLocaleString()}</div>
+        <div style="display:flex;gap:6px">
+          <button onclick="toggleFlash(${o.id},${!o.is_active})" style="flex:1;padding:7px;background:${o.is_active?'#f5f5f0':'#E1F5EE'};color:${o.is_active?'#555':'#085041'};border:1px solid #ddd;border-radius:8px;font-size:12px;cursor:pointer">
+            ${o.is_active?'⏸ Deactivate':'▶ Activate'}
+          </button>
+          <button onclick="viewClaims(${o.id})" style="flex:1;padding:7px;background:#E1F5EE;color:#085041;border:1px solid #b3e6d5;border-radius:8px;font-size:12px;cursor:pointer">
+            📋 Claims
+          </button>
+          <button onclick="deleteFlash(${o.id})" style="padding:7px 12px;background:#FDE8E8;color:#A32D2D;border:1px solid #f5c6c6;border-radius:8px;font-size:12px;cursor:pointer">🗑</button>
+        </div>`;
+      list.appendChild(card);
+    });
+  }catch(e){
+    list.innerHTML='<div class="ql-empty" style="color:#A32D2D">Error: '+e.message+'</div>';
+  }
+}
+
+async function toggleFlash(id, newActive){
+  try{
+    await fetch(BACKEND+'/manager/flash-offers/'+id,{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+mgrToken},
+      body: JSON.stringify({is_active:newActive})
+    });
+    loadFlashOffers();
+  }catch(e){alert('Error: '+e.message);}
+}
+
+async function deleteFlash(id){
+  if(!confirm('Delete this flash offer and all its claims?')) return;
+  try{
+    await fetch(BACKEND+'/manager/flash-offers/'+id,{
+      method:'DELETE',headers:{'Authorization':'Bearer '+mgrToken}
+    });
+    loadFlashOffers();
+  }catch(e){alert('Error: '+e.message);}
+}
+
+async function viewClaims(offerId){
+  try{
+    const r = await fetch(BACKEND+'/manager/flash-offers/'+offerId+'/claims',{
+      headers:{'Authorization':'Bearer '+mgrToken}
+    });
+    const d = await r.json();
+    if(!d.success) throw new Error(d.error);
+    const claims = d.claims||[];
+    const redeemed = claims.filter(c=>c.is_redeemed).length;
+    alert(`Claims for this offer:\n\nTotal claimed: ${claims.length}\nRedeemed: ${redeemed}\nPending: ${claims.length-redeemed}\n\n${claims.slice(0,10).map(c=>`${c.code} — ${c.visitor_name} — ${c.is_redeemed?'✅ Redeemed':'⏳ Pending'}`).join('\n')}`);
+  }catch(e){alert('Error: '+e.message);}
+}
+
+
 function initOffersPlacePicker(){
   const sel = document.getElementById('ofPlaceId');
   if(!sel || sel.options.length > 1) return;
