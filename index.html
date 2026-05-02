@@ -1231,7 +1231,7 @@ async function loadFlashOffers(){
       const soldOut = o.remaining_qty <= 0;
       const pct     = o.total_qty > 0 ? Math.round((o.remaining_qty/o.total_qty)*100) : 0;
       const barColor= pct>50?'#1D9E75':pct>20?'#F0A500':'#A32D2D';
-      const cashierUrl = `${window.location.origin}/cashier.html?key=${o.cashier_key}`;
+      const cashierUrl = `https://cashier-madinahguide.net/?key=${o.cashier_key}`;
 
       const card = document.createElement('div');
       card.style.cssText='background:#fff;border:1px solid #eee;border-radius:12px;padding:1rem;margin-bottom:0.75rem;opacity:'+((expired||soldOut||!o.is_active)?'0.55':'1');
