@@ -718,20 +718,49 @@ async function deleteEvent(id){
 
 // ── PLACE REVIEWS TAB ─────────────────────────────────────────────────────────
 const PLACES_LIST = [
-  // Restaurants
-  {id:33,name:'ALBAIK'},{id:34,name:'Souq Al Tabakha'},{id:49,name:'Al Romansiah'},
-  {id:50,name:'Fan Al Bait Al Arabi'},{id:74,name:'Ghaith Azal Restaurant'},
-  {id:77,name:'Glitter Farm (Restaurant)'},{id:78,name:"Tu'mah Restaurant"},{id:79,name:'Zaman Jadi Restaurant'},
-  // Cafes
-  {id:14,name:'Kiffa Roasters'},{id:15,name:'ROW Specialty Coffee'},{id:16,name:'8oz Coffee'},
-  {id:17,name:'Namq Cafe'},{id:18,name:'Tyam Cafe'},{id:19,name:'Raslania'},{id:76,name:'Glitter Farm (Coffee)'},
-  // Markets
-  {id:32,name:'Madinah Dates Market'},{id:35,name:'Central Dates Auction (Haraj)'},
-  {id:43,name:'Gold Market'},{id:44,name:'Mobile Market (Khalid bin Al-Waleed)'},
-  {id:45,name:'Al-Hizam Mobile Market'},{id:46,name:'Madinah Mint Corner'},
-  // Transport
-  {id:42,name:'Madinah City Sightseeing Bus'},{id:80,name:'Al-Ruhaili Car Rental'},
-];
+
+  // --- CORE RELIGIOUS SITES ---
+
+  // --- HISTORIC LANDMARKS ---
+
+  // --- MUSEUMS ---
+
+  // --- COFFEE ---
+  {id:14,icon:'☕',cat:'coffee',nameEn:'Kiffa Roasters',nameAr:'محمصة كفة',cost:'Varies',instagram:'kiffaroaster',img:'photos/kiffa.jpg',descEn:"Specialty coffee roastery near the Haram, known for rich brews and turquoise interiors.",descAr:'محمصة قهوة مختصة بالقرب من الحرم، تشتهر بديكوراتها الفيروزية.',descUr:'کفہ روسٹرز — حرم کے قریب اسپیشلٹی کافی، فیروزی انٹیریئر کے لیے مشہور۔',descFr:'Kiffa Roasters — torréfaction spécialisée près du Haram, intérieurs turquoise.',descId:'Kiffa Roasters — kedai kopi specialty dekat Haram, interior pirus.',descTr:'Kiffa Roasters — Harem yakınında özel kahve, turkuaz iç mekânıyla.',descRu:'Kiffa Roasters — обжарщик кофе у Харама с бирюзовыми интерьерами.',lat:24.473468,lng:39.608965},
+  // --- MARKET ---
+
+  // --- RESTAURANT ---
+  {id:33,icon:'🍗',cat:'restaurant',nameEn:'ALBAIK',nameAr:'البيك',cost:'4-40 SAR',instagram:'albaik',img:'photos/albaik.jpg',descEn:"Iconic Saudi fast-food chain famous for its broasted chicken and sauce. Multiple branches across Madinah.",descAr:'سلسلة مطاعم الوجبات السريعة السعودية الشهيرة بتقديم الدجاج البروست. فروع متعددة في المدينة.',descUr:'البیک — مشہور سعودی فاسٹ فوڈ چین، بروسٹ چکن کے لیے مشہور۔ متعدد شاخیں۔',descFr:'ALBAIK — chaîne saoudienne iconique célèbre pour son poulet braisé. Plusieurs succursales.',descId:'ALBAIK — jaringan makanan cepat saji ikonik, terkenal ayam panggang. Banyak cabang.',descTr:'ALBAIK — meşhur Suudi fast-food, çıtır tavuğuyla ünlü. Birçok şubesi var.',descRu:'ALBAIK — культовая саудовская сеть с жареной курицей. Много филиалов.',lat:24.471434,lng:39.61035,
+    branches:[
+      {nameEn:'Northern Central Area',    nameAr:'المنطقة المركزية الشمالية', lat:24.471434,  lng:39.61035},
+      {nameEn:'Al Manar Mall',            nameAr:'المنار مول',                lat:24.460838,  lng:39.584791},
+      {nameEn:'Salam Street',             nameAr:'شارع السلام',               lat:24.485280,  lng:39.533133},
+      {nameEn:'Al Hassan Mall',           nameAr:'الحسن مول',                 lat:24.498057,  lng:39.618710},
+      {nameEn:'Noor Mall',                nameAr:'النور مول',                 lat:24.49624,   lng:39.59514},
+      {nameEn:'High Speed Train Station', nameAr:'محطة القطار السريع',        lat:24.473864,  lng:39.700249},
+      {nameEn:'Prince Megran University', nameAr:'جامعة الأمير مقرن',         lat:24.476989,  lng:39.710077},
+      {nameEn:'Al Khaldiah',              nameAr:'الخالدية',                  lat:24.44436,   lng:39.65018},
+      {nameEn:'Al Muhammadiah',           nameAr:'المحمدية',                  lat:24.42238,   lng:39.63808},
+      {nameEn:'Aliat Mall',               nameAr:'العالية مول',               lat:24.414003,  lng:39.619435},
+      {nameEn:'Al Hijrah Walkway',        nameAr:'ممشى الهجرة',               lat:24.424862,  lng:39.594131},
+    ]},
+
+
+{id:74,icon:'🍽️',cat:'restaurant',nameEn:'Ghaith Azal Restaurant',nameAr:'مطعم غيث أزال',cost:'30 - 80 SAR',instagram:'ghaithazal',img:'photos/ghaith-azal.jpg',descAr:'مطعم يقدم المأكولات الشعبية واليمنية الأصيلة في المدينة المنورة.',descEn:'A restaurant serving authentic traditional and Yemeni cuisine in Madinah.',descUr:'مدینہ منورہ میں روایتی اور یمنی کھانے پیش کرنے والا ایک ریستورانت۔',descFr:'Un restaurant proposant une cuisine traditionnelle et yéménite authentique à Médine.',descId:'Restoran yang menyajikan masakan tradisional dan Yaman otentik di Madinah.',descTr:'Medine\'de otantik geleneksel ve Yemen mutfağı sunan bir restoran.',descRu:'Ресторан аутентичной традиционной и йеменской кухни в Медине.',lat:24.47697,lng:39.59100,infoEn:'',infoAr:''},
+
+  // --- MOUNTAINS ---
+  // --- services ---
+
+{id:82,icon:'🧺',cat:'services',nameEn:'Al-Sayh Laundry',nameAr:'مغسلة ملابس (حي السيح)',cost:'Varies',instagram:null,img:'photos/sayh-laundry.jpg',descAr:'مغسلة ملابس تقدم خدمات الغسيل والكي في حي السيح.',descEn:'A laundry service providing washing and ironing services in the Al-Sayh neighborhood.',descUr:'سیح کے علاقے میں کپڑے دھونے اور استری کی خدمات فراہم کرنے والی لانڈری۔',descFr:'Une blanchisserie offrant des services de lavage et de repassage dans le quartier d\'Al-Sayh.',descId:'Layanan penatu yang menyediakan jasa cuci dan setrika di lingkungan Al-Sayh.',descTr:'Al-Sayh mahallesinde yıkama ve ütüleme hizmetleri sunan bir çamaşırhane.',descRu:'Прачечная, предоставляющая услуги стирки и глажки в районе Аль-Сайх.',lat:24.47098,lng:39.59462,infoEn:'',infoAr:'غسيل جميع أنواع الملابس والبطانيات'},
+  // --- TRANSPORT ---
+
+  {id:80,icon:'🚗',cat:'transport',nameEn:'Al-Ruhaili Car Rental',nameAr:'مكتب الرحيلي لتأجير السيارات',cost:'120 - 350 SAR',instagram:null,img:'photos/alruhaili-cars.jpg',descAr:'مكتب محلي لتأجير السيارات، يشمل جميع الفروع في المدينة المنورة.',descEn:'A local car rental office, including all branches within Madinah.',descUr:'گاڑیوں کے کرایے کا مقامی دفتر، جس میں مدینہ منورہ کی تمام شاخیں شامل ہیں۔',descFr:'Un bureau local de location de voitures, comprenant toutes les succursales à Médine.',descId:'Kantor penyewaan mobil lokal, mencakup semua cabang di Madinah.',descTr:'Medine\'deki tüm şubeleri kapsayan yerel bir araç kiralama ofisi.',descRu:'Местный офис по прокату автомобилей, включая все филиалы в Медине.',lat:24.47293240453584, lng:39.64682638543038,
+    branches:[
+      {nameEn:'Airport Road Khalid ibn Alwaleed', nameAr:'فرع طريق خالد بن الوليد', lat:24.47293240453584, lng:39.64682638543038},
+      {nameEn:'Al-Aziziyah Branch', nameAr:'فرع العزيزية', lat:24.48856573225688, lng:39.57436296807623},
+    ]},
+  ];
+
 
 function initReviewsTab(){
   // Populate place dropdowns
